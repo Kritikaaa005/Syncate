@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Moon, Sun } from "lucide-react-native";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,29 +15,81 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
+import { updateNickname } from "@/services/userService";
 
 function NicknameScreen() {
   const { isDark, toggleDark } = useTheme();
+
   const theme = isDark
     ? guestTheme.mode.dark
     : guestTheme.mode.light;
 
   const [nickname, setNickname] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const cleanNickname = nickname.trim();
+  const hasForbiddenCharacters = /[\n\r\t]/.test(nickname);
 
   const canContinue =
     cleanNickname.length >= 2 &&
-    cleanNickname.length <= 30;
+    cleanNickname.length <= 30 &&
+    !hasForbiddenCharacters;
 
-  const handleContinue = () => {
-    if (!canContinue) return;
+  const handleNicknameChange = (value: string) => {
+    setNickname(value);
 
-    console.log("Nickname:", cleanNickname);
-
-    // Temporary route until the next onboarding page is merged.
-    router.push("/guest");
+    if (errorMessage) {
+      setErrorMessage("");
+    }
   };
+
+  const handleContinue = async () => {
+    if (!canContinue || isSubmitting) return;
+
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await updateNickname(cleanNickname);
+
+      router.replace({
+        pathname: "/onboarding/preference" as any,
+        params: {
+          nickname: response.nickname,
+        },
+      });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save your nickname. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getHelperMessage = () => {
+    if (errorMessage) {
+      return errorMessage;
+    }
+
+    if (hasForbiddenCharacters) {
+      return "Nickname cannot contain tabs or line breaks.";
+    }
+
+    if (cleanNickname.length === 1) {
+      return "Nickname must contain at least 2 characters.";
+    }
+
+    return "Letters, numbers, symbols and emoji are welcome.";
+  };
+
+  const helperHasError =
+    Boolean(errorMessage) ||
+    hasForbiddenCharacters ||
+    cleanNickname.length === 1;
 
   return (
     <SafeAreaView
@@ -208,7 +261,8 @@ function NicknameScreen() {
 
             <TextInput
               value={nickname}
-              onChangeText={setNickname}
+              onChangeText={handleNicknameChange}
+              editable={!isSubmitting}
               placeholder="Enter your nickname"
               placeholderTextColor={theme.muted}
               maxLength={30}
@@ -217,62 +271,77 @@ function NicknameScreen() {
               returnKeyType="done"
               onSubmitEditing={handleContinue}
               selectionColor={theme.primary}
+              accessibilityLabel="Nickname"
               style={[
                 styles.input,
                 {
                   color: theme.text,
                   backgroundColor: theme.inputBackground,
-                  borderColor: theme.inputBorder,
+                  borderColor: helperHasError
+                    ? theme.primary
+                    : theme.inputBorder,
                 },
               ]}
             />
 
-         <View style={styles.helperRow}>
-  <Text
-    style={[
-      styles.helperText,
-      {
-        color: canContinue ? theme.muted : theme.primary,
-      },
-    ]}
-  >
-    {canContinue
-      ? "Alphanumeric with special characters are acceptable."
-      : "Nickname must contain at least 2 characters."}
-  </Text>
+            <View style={styles.helperRow}>
+              <Text
+                style={[
+                  styles.helperText,
+                  {
+                    color: helperHasError
+                      ? theme.primary
+                      : theme.muted,
+                  },
+                ]}
+              >
+                {getHelperMessage()}
+              </Text>
 
-  <Text
-    style={[
-      styles.characterCount,
-      {
-        color: theme.muted,
-      },
-    ]}
-  >
-    {nickname.length}/30
-  </Text>
-</View>
+              <Text
+                style={[
+                  styles.characterCount,
+                  {
+                    color: theme.muted,
+                  },
+                ]}
+              >
+                {nickname.length}/30
+              </Text>
+            </View>
 
-<Pressable
-  disabled={!canContinue}
-  onPress={handleContinue}
-  accessibilityRole="button"
-  accessibilityLabel="Continue"
-  style={({ pressed }) => [
-    styles.continueButton,
-    {
-      backgroundColor: theme.primaryButton,
-      shadowColor: theme.shadow,
-    },
-    pressed &&
-      canContinue &&
-      styles.continueButtonPressed,
-  ]}
->
-  <Text style={styles.continueText}>
-    Continue
-  </Text>
-</Pressable>
+            <Pressable
+              disabled={!canContinue || isSubmitting}
+              onPress={handleContinue}
+              accessibilityRole="button"
+              accessibilityLabel="Continue"
+              accessibilityState={{
+                disabled: !canContinue || isSubmitting,
+                busy: isSubmitting,
+              }}
+              style={({ pressed }) => [
+                styles.continueButton,
+                {
+                  backgroundColor: theme.primaryButton,
+                  shadowColor: theme.shadow,
+                },
+                pressed &&
+                  canContinue &&
+                  !isSubmitting &&
+                  styles.continueButtonPressed,
+              ]}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+              ) : (
+                <Text style={styles.continueText}>
+                  Continue
+                </Text>
+              )}
+            </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -389,16 +458,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
- continueButtonPressed: {
-  transform: [{ scale: 0.985 }],
-},
+  continueButtonPressed: {
+    transform: [{ scale: 0.985 }],
+  },
 
-continueText: {
-  color: "#FFFFFF",
-  fontSize: 15,
-  lineHeight: 20,
-  fontWeight: "700",
-},
+  continueText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "700",
+  },
+
   star: {
     position: "absolute",
     fontWeight: "300",

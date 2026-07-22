@@ -3,6 +3,10 @@ from django.db import models
 
 
 class UserProfile(models.Model):
+    class TrackingMode(models.TextChoices):
+        PERIOD = "period", "Period Tracking"
+        PREGNANCY = "pregnancy", "Pregnancy Tracking"
+
     profile_id = models.BigAutoField(primary_key=True)
 
     user = models.OneToOneField(
@@ -14,6 +18,13 @@ class UserProfile(models.Model):
     nickname = models.CharField(
         max_length=30,
         blank=True,
+    )
+
+    tracking_mode = models.CharField(
+        max_length=20,
+        choices=TrackingMode.choices,
+        blank=True,
+        default="",
     )
 
     age = models.PositiveSmallIntegerField(
