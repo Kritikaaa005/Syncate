@@ -48,6 +48,8 @@ INSTALLED_APPS = [
 
     "articles",
     "users.apps.UsersConfig",
+    "accounts.apps.AccountsConfig",
+    "legal_docs.apps.LegalDocsConfig",
 ]
 
 MIDDLEWARE = [

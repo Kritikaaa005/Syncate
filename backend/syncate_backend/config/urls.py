@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Articles API
     path("api/", include("articles.urls")),
+    path("api/", include("legal_docs.urls")),
 
     # Users API
     path("api/users/", include("users.urls")),
