@@ -10,26 +10,28 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+# === CHANGED: added os and load_dotenv imports ===
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# === CHANGED: load the .env file so os.environ.get() below can read it ===
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--chq6a=#5=0i%+ce$&!szx!2^vqy%e6n!t$&8&c&2ch1k1h-4%'
+# === CHANGED: SECRET_KEY now comes from .env instead of hardcoded ===
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-fallback-for-local-only")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# === CHANGED: DEBUG now comes from .env instead of hardcoded ===
+DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "localhost",
-    "192.168.1.72",
-]
+# === CHANGED: ALLOWED_HOSTS now comes from .env instead of hardcoded ===
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 
 # Application definition
@@ -74,14 +76,15 @@ REST_FRAMEWORK = {
     ],
 }
 
+# === CHANGED: all 5 DB values now come from .env instead of hardcoded ===
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "syncate_db",
-        "USER": "postgres",
-        "PASSWORD": "musa",
-        "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": os.environ.get("DB_NAME", "syncate_db"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
 ROOT_URLCONF = 'config.urls'
@@ -103,9 +106,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-
 
 
 # Password validation
