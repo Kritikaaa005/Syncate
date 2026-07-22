@@ -47,6 +47,18 @@ INSTALLED_APPS = [
     "corsheaders",
     "articles",
    "users.apps.UsersConfig",
+
+    # accounts: existed as an empty stub before, wasn't even registered
+    # here. Now houses the admin-account safety rules (see
+    # accounts/admin.py + accounts/signals.py) — "an admin can't delete
+    # their own account" (dashboard) and "the system can never be left
+    # with zero superadmins" (DB-level, via a signal).
+    "accounts.apps.AccountsConfig",
+
+    # legal_docs: CRUD for Terms & Conditions / Privacy Policy content
+    # (separate versions for guest vs registered users), managed through
+    # the Django admin and served to the mobile app via /api/legal-documents/.
+    "legal_docs.apps.LegalDocsConfig",
 ]
 
 MIDDLEWARE = [

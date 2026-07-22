@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
 import SplashScreen from "@/screens/common/SplashScreen";
+// If your project keeps it under components/common instead, adjust this import.
 
 const SPLASH_DURATION_MS = 2000;
 
@@ -16,8 +17,7 @@ export default function Index() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // TODO: point to /terms once the Terms & Privacy screen route exists.
-      router.replace("/guest");
+      router.replace("/terms");
     }, SPLASH_DURATION_MS);
 
     return () => clearTimeout(timer);
