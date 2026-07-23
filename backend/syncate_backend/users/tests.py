@@ -1,11 +1,35 @@
+"""
+Tests for the users application.
+
+Includes:
+- Tracking-mode preference updates
+- Email verification
+- Login
+- Soft account deletion
+- Refresh-token blacklisting
+"""
+
+from datetime import date, timedelta
+
 from django.contrib.auth.models import User
+from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIClient, APITestCase
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import UserProfile
+from .services import (
+    consume_email_verification_token,
+    deactivate_account,
+    issue_email_verification_token,
+)
 
 
 class UpdateTrackingModeTests(APITestCase):
@@ -16,27 +40,44 @@ class UpdateTrackingModeTests(APITestCase):
             password="StrongPassword123!",
         )
 
-        self.profile, _ = UserProfile.objects.get_or_create(
-            user=self.user,
+        self.profile, _ = (
+            UserProfile.objects.get_or_create(
+                user=self.user,
+            )
         )
 
         self.profile.nickname = "Aadhya✨"
-        self.profile.save(update_fields=["nickname"])
+        self.profile.save(
+            update_fields=["nickname"]
+        )
 
-        refresh = RefreshToken.for_user(self.user)
-        self.access_token = str(refresh.access_token)
+        refresh = RefreshToken.for_user(
+            self.user
+        )
 
-        self.url = reverse("update-tracking-mode")
+        self.access_token = str(
+            refresh.access_token
+        )
+
+        self.url = reverse(
+            "update-tracking-mode"
+        )
 
     def authenticate(self):
         self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+            HTTP_AUTHORIZATION=(
+                f"Bearer {self.access_token}"
+            )
         )
 
-    def test_unauthenticated_user_cannot_update_tracking_mode(self):
+    def test_unauthenticated_user_cannot_update_tracking_mode(
+        self,
+    ):
         response = self.client.patch(
             self.url,
-            {"tracking_mode": "period"},
+            {
+                "tracking_mode": "period",
+            },
             format="json",
         )
 
@@ -45,12 +86,16 @@ class UpdateTrackingModeTests(APITestCase):
             status.HTTP_401_UNAUTHORIZED,
         )
 
-    def test_authenticated_user_can_select_period_tracking(self):
+    def test_authenticated_user_can_select_period_tracking(
+        self,
+    ):
         self.authenticate()
 
         response = self.client.patch(
             self.url,
-            {"tracking_mode": "period"},
+            {
+                "tracking_mode": "period",
+            },
             format="json",
         )
 
@@ -72,16 +117,22 @@ class UpdateTrackingModeTests(APITestCase):
         )
 
         self.assertEqual(
-            response.data["tracking_mode_label"],
+            response.data[
+                "tracking_mode_label"
+            ],
             "Period Tracking",
         )
 
-    def test_authenticated_user_can_select_pregnancy_tracking(self):
+    def test_authenticated_user_can_select_pregnancy_tracking(
+        self,
+    ):
         self.authenticate()
 
         response = self.client.patch(
             self.url,
-            {"tracking_mode": "pregnancy"},
+            {
+                "tracking_mode": "pregnancy",
+            },
             format="json",
         )
 
@@ -94,20 +145,30 @@ class UpdateTrackingModeTests(APITestCase):
 
         self.assertEqual(
             self.profile.tracking_mode,
-            UserProfile.TrackingMode.PREGNANCY,
+            (
+                UserProfile
+                .TrackingMode
+                .PREGNANCY
+            ),
         )
 
         self.assertEqual(
-            response.data["tracking_mode_label"],
+            response.data[
+                "tracking_mode_label"
+            ],
             "Pregnancy Tracking",
         )
 
-    def test_invalid_tracking_mode_is_rejected(self):
+    def test_invalid_tracking_mode_is_rejected(
+        self,
+    ):
         self.authenticate()
 
         response = self.client.patch(
             self.url,
-            {"tracking_mode": "fitness"},
+            {
+                "tracking_mode": "fitness",
+            },
             format="json",
         )
 
@@ -123,12 +184,16 @@ class UpdateTrackingModeTests(APITestCase):
             "",
         )
 
-    def test_empty_tracking_mode_is_rejected(self):
+    def test_empty_tracking_mode_is_rejected(
+        self,
+    ):
         self.authenticate()
 
         response = self.client.patch(
             self.url,
-            {"tracking_mode": ""},
+            {
+                "tracking_mode": "",
+            },
             format="json",
         )
 
@@ -137,7 +202,9 @@ class UpdateTrackingModeTests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_missing_tracking_mode_is_rejected(self):
+    def test_missing_tracking_mode_is_rejected(
+        self,
+    ):
         self.authenticate()
 
         response = self.client.patch(
@@ -151,19 +218,29 @@ class UpdateTrackingModeTests(APITestCase):
             status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_user_can_change_tracking_mode(self):
+    def test_user_can_change_tracking_mode(
+        self,
+    ):
         self.authenticate()
 
         first_response = self.client.patch(
             self.url,
-            {"tracking_mode": "period"},
+            {
+                "tracking_mode": "period",
+            },
             format="json",
         )
 
-        second_response = self.client.patch(
-            self.url,
-            {"tracking_mode": "pregnancy"},
-            format="json",
+        second_response = (
+            self.client.patch(
+                self.url,
+                {
+                    "tracking_mode": (
+                        "pregnancy"
+                    ),
+                },
+                format="json",
+            )
         )
 
         self.assertEqual(
@@ -180,5 +257,413 @@ class UpdateTrackingModeTests(APITestCase):
 
         self.assertEqual(
             self.profile.tracking_mode,
-            UserProfile.TrackingMode.PREGNANCY,
+            (
+                UserProfile
+                .TrackingMode
+                .PREGNANCY
+            ),
+        )
+
+
+def make_verified_user_with_password(
+    email="verified@example.com",
+    password="a-strong-passphrase-42",
+):
+    user = User.objects.create_user(
+        username="testuser",
+        email=email,
+        password=password,
+    )
+
+    profile, _ = (
+        UserProfile.objects.get_or_create(
+            user=user,
+        )
+    )
+
+    profile.date_of_birth = date(
+        2000,
+        1,
+        1,
+    )
+
+    profile.is_email_verified = True
+
+    profile.save(
+        update_fields=[
+            "date_of_birth",
+            "is_email_verified",
+        ]
+    )
+
+    return user
+
+
+class EmailVerificationTests(TestCase):
+    def test_valid_token_verifies_and_marks_used(
+        self,
+    ):
+        user = User.objects.create_user(
+            username="u1",
+            email="a@example.com",
+        )
+
+        token = (
+            issue_email_verification_token(
+                user,
+                "a@example.com",
+            )
+        )
+
+        result = (
+            consume_email_verification_token(
+                token.token
+            )
+        )
+
+        self.assertIsNotNone(result)
+
+        user.profile.refresh_from_db()
+
+        self.assertTrue(
+            user.profile.is_email_verified
+        )
+
+        token.refresh_from_db()
+
+        self.assertIsNotNone(
+            token.used_at
+        )
+
+    def test_token_cannot_be_used_twice(
+        self,
+    ):
+        user = User.objects.create_user(
+            username="u2",
+            email="b@example.com",
+        )
+
+        token = (
+            issue_email_verification_token(
+                user,
+                "b@example.com",
+            )
+        )
+
+        first = (
+            consume_email_verification_token(
+                token.token
+            )
+        )
+
+        second = (
+            consume_email_verification_token(
+                token.token
+            )
+        )
+
+        self.assertIsNotNone(first)
+        self.assertIsNone(second)
+
+    def test_expired_token_is_rejected(
+        self,
+    ):
+        user = User.objects.create_user(
+            username="u3",
+            email="c@example.com",
+        )
+
+        token = (
+            issue_email_verification_token(
+                user,
+                "c@example.com",
+            )
+        )
+
+        token.expires_at = (
+            timezone.now()
+            - timedelta(hours=1)
+        )
+
+        token.save(
+            update_fields=["expires_at"]
+        )
+
+        result = (
+            consume_email_verification_token(
+                token.token
+            )
+        )
+
+        self.assertIsNone(result)
+
+    def test_nonexistent_token_is_rejected(
+        self,
+    ):
+        result = (
+            consume_email_verification_token(
+                "this-token-does-not-exist"
+            )
+        )
+
+        self.assertIsNone(result)
+
+    def test_requesting_new_token_invalidates_old_token(
+        self,
+    ):
+        user = User.objects.create_user(
+            username="u4",
+            email="d@example.com",
+        )
+
+        old_token = (
+            issue_email_verification_token(
+                user,
+                "d@example.com",
+            )
+        )
+
+        new_token = (
+            issue_email_verification_token(
+                user,
+                "d@example.com",
+            )
+        )
+
+        self.assertNotEqual(
+            old_token.token,
+            new_token.token,
+        )
+
+        self.assertIsNone(
+            consume_email_verification_token(
+                old_token.token
+            )
+        )
+
+        self.assertIsNotNone(
+            consume_email_verification_token(
+                new_token.token
+            )
+        )
+
+
+class LoginTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = "/api/auth/login/"
+
+    def test_login_with_correct_credentials_succeeds(
+        self,
+    ):
+        make_verified_user_with_password(
+            email="login@example.com",
+            password=(
+                "a-strong-passphrase-42"
+            ),
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "email": "login@example.com",
+                "password": (
+                    "a-strong-passphrase-42"
+                ),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+        self.assertIn(
+            "access",
+            response.data,
+        )
+
+        self.assertIn(
+            "refresh",
+            response.data,
+        )
+
+    def test_login_is_case_insensitive_on_email(
+        self,
+    ):
+        make_verified_user_with_password(
+            email="Login@Example.com",
+            password=(
+                "a-strong-passphrase-42"
+            ),
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "email": "login@example.com",
+                "password": (
+                    "a-strong-passphrase-42"
+                ),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
+
+    def test_wrong_password_rejected(
+        self,
+    ):
+        make_verified_user_with_password(
+            email="login2@example.com",
+            password=(
+                "a-strong-passphrase-42"
+            ),
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "email": (
+                    "login2@example.com"
+                ),
+                "password": (
+                    "totally-wrong"
+                ),
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_login_does_not_reveal_if_email_exists(
+        self,
+    ):
+        make_verified_user_with_password(
+            email="real@example.com",
+            password=(
+                "a-strong-passphrase-42"
+            ),
+        )
+
+        wrong_password = self.client.post(
+            self.url,
+            {
+                "email": "real@example.com",
+                "password": "nope",
+            },
+            format="json",
+        )
+
+        no_such_account = (
+            self.client.post(
+                self.url,
+                {
+                    "email": (
+                        "nobody@example.com"
+                    ),
+                    "password": "nope",
+                },
+                format="json",
+            )
+        )
+
+        self.assertEqual(
+            wrong_password.status_code,
+            no_such_account.status_code,
+        )
+
+        self.assertEqual(
+            wrong_password.data,
+            no_such_account.data,
+        )
+
+    def test_account_without_password_cannot_login(
+        self,
+    ):
+        user = User.objects.create_user(
+            username="nopass",
+            email="nopass@example.com",
+        )
+
+        user.set_unusable_password()
+        user.save(
+            update_fields=["password"]
+        )
+
+        profile, _ = (
+            UserProfile.objects.get_or_create(
+                user=user,
+            )
+        )
+
+        profile.is_email_verified = True
+
+        profile.save(
+            update_fields=[
+                "is_email_verified"
+            ]
+        )
+
+        response = self.client.post(
+            self.url,
+            {
+                "email": (
+                    "nopass@example.com"
+                ),
+                "password": "anything",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+
+class SoftDeleteAndTokenBlacklistTests(
+    TestCase
+):
+    def test_deactivate_account_blacklists_outstanding_tokens(
+        self,
+    ):
+        user = (
+            make_verified_user_with_password()
+        )
+
+        refresh = RefreshToken.for_user(
+            user
+        )
+
+        outstanding = (
+            OutstandingToken.objects.get(
+                jti=refresh["jti"]
+            )
+        )
+
+        deactivate_account(user)
+
+        user.refresh_from_db()
+        user.profile.refresh_from_db()
+
+        self.assertTrue(
+            user.profile.is_deleted
+        )
+
+        self.assertFalse(
+            user.is_active
+        )
+
+        self.assertTrue(
+            BlacklistedToken.objects.filter(
+                token=outstanding
+            ).exists()
         )

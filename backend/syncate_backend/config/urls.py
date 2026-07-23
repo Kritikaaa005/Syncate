@@ -2,36 +2,63 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-
 from rest_framework_simplejwt.views import (
-    TokenRefreshView,
     TokenVerifyView,
 )
+
+from users.urls import (
+    auth_api_urlpatterns,
+    verification_page_urlpatterns,
+)
+
+
+admin.site.site_header = "Syncate — Admin"
+admin.site.site_title = "Syncate Admin"
+admin.site.index_title = (
+    "Content & Account Management"
+)
+
 
 urlpatterns = [
     # Django Admin
     path("admin/", admin.site.urls),
 
-    # Articles API
+    # Content APIs
     path("api/", include("articles.urls")),
     path("api/", include("legal_docs.urls")),
 
-    # Users API
-    path("api/users/", include("users.urls")),
-
-    # JWT
+    # Registration
     path(
-        "api/auth/token/refresh/",
-        TokenRefreshView.as_view(),
-        name="token_refresh",
+        "api/auth/",
+        include("registration.urls"),
     ),
 
+    # Login and refresh-token endpoints
+    path(
+        "api/auth/",
+        include(auth_api_urlpatterns),
+    ),
+
+    # Access-token verification
     path(
         "api/auth/token/verify/",
         TokenVerifyView.as_view(),
         name="token_verify",
     ),
+
+    # Authenticated user profile endpoints
+    path(
+        "api/users/",
+        include("users.urls"),
+    ),
+
+    # Browser page opened from verification email
+    path(
+        "",
+        include(verification_page_urlpatterns),
+    ),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(

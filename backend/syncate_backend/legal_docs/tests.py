@@ -17,7 +17,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import LegalDocument
+from .models import LegalDocument, LegalDocumentAcceptance
 
 
 def make_doc(**overrides):
@@ -134,10 +134,17 @@ class VersionFormatTests(TestCase):
         with self.assertRaises(ValidationError):
             make_doc(version='banana')
 
-    def test_accepts_dotted_numeric_versions(self):
-        for good_version in ['1', '1.0', '1.2.3', '10.20.30']:
+    def test_accepts_major_minor_versions(self):
+        for good_version in ['1.0', '1.1', '2.0', '10.20']:
             doc = make_doc(version=good_version, title=f'v{good_version}')
             self.assertEqual(doc.version, good_version)
+
+    def test_rejects_anything_other_than_major_minor(self):
+        """Locked to major.minor only — no bare integers, no patch
+        numbers. Product decision, not just a technical default."""
+        for bad_version in ['1', '1.2.3', '10.20.30', 'v1.0', '1.0-beta']:
+            with self.assertRaises(ValidationError):
+                make_doc(version=bad_version, title=f'bad-{bad_version}')
 
 
 class ApprovalMetadataTests(TestCase):
@@ -196,3 +203,92 @@ class AdminLegalDocumentAPITests(APITestCase):
 
         self.doc.refresh_from_db()
         self.assertTrue(self.doc.is_deleted)
+
+
+class LegalDocumentAcceptanceAPITests(APITestCase):
+    """The registered-user counterpart to the guest flow's local
+    AsyncStorage consent — server-side this time."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('member')
+        self.active_terms = make_doc(
+            doc_type=LegalDocument.DocType.REGISTERED_TERMS,
+            version='1.0',
+            is_approved=True,
+            is_active=True,
+        )
+
+    def test_anonymous_user_cannot_reach_acceptance_endpoints(self):
+        response = self.client.get('/api/legal-documents/my-acceptances/')
+        self.assertIn(response.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))
+
+    def test_accepting_records_the_currently_active_version(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            '/api/legal-documents/accept/', {'doc_type': 'registered_terms'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['version'], '1.0')
+
+        acceptance = LegalDocumentAcceptance.objects.get(user=self.user, doc_type='registered_terms')
+        self.assertEqual(acceptance.version, '1.0')
+
+    def test_client_supplied_version_is_ignored(self):
+        """Only the doc_type is taken from the request — the version
+        recorded is always whatever the server considers 'currently
+        active', never something the client claims."""
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            '/api/legal-documents/accept/',
+            {'doc_type': 'registered_terms', 'version': '99.9'},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['version'], '1.0')  # not '99.9'
+
+    def test_accepting_again_after_a_new_version_updates_the_same_row(self):
+        self.client.force_authenticate(self.user)
+        self.client.post('/api/legal-documents/accept/', {'doc_type': 'registered_terms'})
+
+        self.active_terms.is_active = False
+        self.active_terms.save()
+        newer = make_doc(
+            doc_type=LegalDocument.DocType.REGISTERED_TERMS,
+            version='1.1',
+            is_approved=True,
+            is_active=True,
+        )
+
+        self.client.post('/api/legal-documents/accept/', {'doc_type': 'registered_terms'})
+
+        self.assertEqual(
+            LegalDocumentAcceptance.objects.filter(user=self.user, doc_type='registered_terms').count(),
+            1,  # updated in place, not a second row
+        )
+        acceptance = LegalDocumentAcceptance.objects.get(user=self.user, doc_type='registered_terms')
+        self.assertEqual(acceptance.version, '1.1')
+
+    def test_my_acceptances_only_lists_what_was_actually_accepted(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get('/api/legal-documents/my-acceptances/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])  # nothing accepted yet
+
+        self.client.post('/api/legal-documents/accept/', {'doc_type': 'registered_terms'})
+        response = self.client.get('/api/legal-documents/my-acceptances/')
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['doc_type'], 'registered_terms')
+
+    def test_invalid_doc_type_rejected(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            '/api/legal-documents/accept/', {'doc_type': 'not_a_real_type'}
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_accepting_a_doctype_with_no_active_document_fails_cleanly(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.post(
+            '/api/legal-documents/accept/', {'doc_type': 'registered_privacy'}
+        )
+        # registered_privacy has no active doc in this test's setUp
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)

@@ -24,11 +24,16 @@ Two viewsets, same split reasoning as serializers.py:
 """
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import LegalDocument
-from .serializers import AdminLegalDocumentSerializer, PublicLegalDocumentSerializer
+from .models import LegalDocument, LegalDocumentAcceptance
+from .serializers import (
+    AdminLegalDocumentSerializer,
+    LegalDocumentAcceptanceSerializer,
+    PublicLegalDocumentSerializer,
+)
 
 
 class PublicLegalDocumentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -129,5 +134,69 @@ class AdminLegalDocumentViewSet(viewsets.ModelViewSet):
 
         return Response(
             {'message': 'Legal document soft-deleted successfully.'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class LegalDocumentAcceptanceView(APIView):
+    """
+    The registered-user counterpart to the guest flow's on-device
+    AsyncStorage consent (see mobile's useGuestConsent.ts) — see
+    LegalDocumentAcceptance's model docstring for why this needs to be
+    server-side instead for a real account.
+
+        GET  /api/legal-documents/my-acceptances/
+            -> [{"doc_type": "registered_terms", "version": "1.0"}, ...]
+            Only doc_types the user has EVER accepted appear here — the
+            mobile app compares each entry's version against whatever
+            LegalDocument.get_active() currently returns for that
+            doc_type (same "does my stored version match the live one"
+            comparison the guest flow already does locally), and decides
+            whether to show the Terms screen again from that.
+
+        POST /api/legal-documents/accept/  {"doc_type": "registered_terms"}
+            -> records that this user accepted whatever version is
+            CURRENTLY active for that doc_type. Deliberately does NOT
+            accept a client-supplied version — the server decides what
+            "the current version" is, not the app, so this can't be
+            tampered with into recording acceptance of a version that
+            was never actually shown to the user.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        acceptances = LegalDocumentAcceptance.objects.filter(user=request.user)
+        return Response(LegalDocumentAcceptanceSerializer(acceptances, many=True).data)
+
+    def post(self, request):
+        doc_type = request.data.get('doc_type')
+        valid_doc_types = {choice.value for choice in LegalDocument.DocType}
+
+        if doc_type not in valid_doc_types:
+            return Response(
+                {'detail': f"doc_type must be one of {sorted(valid_doc_types)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        active_document = LegalDocument.get_active(doc_type)
+        if active_document is None:
+            # Shouldn't normally happen (every doc_type should have a
+            # live version), but fail cleanly rather than recording
+            # acceptance of "nothing" if content genuinely isn't
+            # published yet.
+            return Response(
+                {'detail': f"No active document currently published for '{doc_type}'."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        acceptance, _created = LegalDocumentAcceptance.objects.update_or_create(
+            user=request.user,
+            doc_type=doc_type,
+            defaults={'version': active_document.version},
+        )
+
+        return Response(
+            LegalDocumentAcceptanceSerializer(acceptance).data,
             status=status.HTTP_200_OK,
         )
