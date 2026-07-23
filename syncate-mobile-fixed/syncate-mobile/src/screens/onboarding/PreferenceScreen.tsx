@@ -1,9 +1,13 @@
-import { router, useLocalSearchParams } from "expo-router";
 import {
-  Baby,
+  type Href,
+  router,
+  useLocalSearchParams,
+} from "expo-router";
+import {
   CalendarDays,
   Check,
   Moon,
+  Sprout,
   Sun,
 } from "lucide-react-native";
 import { useState } from "react";
@@ -29,6 +33,9 @@ type PreferenceOption = {
   title: string;
   description: string;
 };
+
+const LAST_PERIOD_ROUTE =
+  "/onboarding/last-period" as Href;
 
 const preferenceOptions: PreferenceOption[] = [
   {
@@ -65,39 +72,70 @@ function PreferenceScreen() {
   const [selectedMode, setSelectedMode] =
     useState<TrackingMode | null>(null);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
 
   const handleSelect = (mode: TrackingMode) => {
+    if (isSubmitting) return;
+
     setSelectedMode(mode);
-
-    if (errorMessage) {
-      setErrorMessage("");
-    }
-  };
-
-  const handleContinue = async () => {
-    if (!selectedMode || isSubmitting) return;
-
     setErrorMessage("");
-    setIsSubmitting(true);
-
-    try {
-      await updateTrackingMode(selectedMode);
-
-      // Temporary destination until the remaining onboarding
-      // screens are ready.
-      router.replace("/guest");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Could not save your preference. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
   };
+
+ const goToNextScreen = (mode: TrackingMode) => {
+  if (mode === "period") {
+    router.replace(LAST_PERIOD_ROUTE);
+    return;
+  }
+
+  // Temporary until pregnancy onboarding is built.
+  router.replace("/guest");
+};
+
+const handleContinue = async () => {
+  if (!selectedMode || isSubmitting) return;
+
+  setErrorMessage("");
+  setIsSubmitting(true);
+
+  try {
+    await updateTrackingMode(selectedMode);
+
+    goToNextScreen(selectedMode);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Could not save your preference. Please try again.";
+
+    const hasNoAccessToken =
+      message.includes("No access token") ||
+      message.includes("Please sign in again");
+
+    /*
+     * The authentication screens are being developed
+     * on another branch. Allow UI preview only while
+     * running the Expo development build.
+     *
+     * __DEV__ is false in production builds.
+     */
+    if (__DEV__ && hasNoAccessToken) {
+      console.warn(
+        "Tracking preference was not saved because authentication is not connected yet."
+      );
+
+      goToNextScreen(selectedMode);
+      return;
+    }
+
+    setErrorMessage(message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <SafeAreaView
@@ -124,9 +162,15 @@ function PreferenceScreen() {
           ]}
         >
           {isDark ? (
-            <Sun size={18} color={theme.primary} />
+            <Sun
+              size={18}
+              color={theme.primary}
+            />
           ) : (
-            <Moon size={18} color={theme.primary} />
+            <Moon
+              size={18}
+              color={theme.primary}
+            />
           )}
         </Pressable>
 
@@ -176,7 +220,9 @@ function PreferenceScreen() {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={
+            styles.scrollContent
+          }
         >
           <View style={styles.headingSection}>
             <Text
@@ -209,7 +255,8 @@ function PreferenceScreen() {
                 },
               ]}
             >
-              Select what you would like Syncate to help you track.
+              Select what you would like Syncate
+              to help you track.
             </Text>
           </View>
 
@@ -221,7 +268,7 @@ function PreferenceScreen() {
               const Icon =
                 option.value === "period"
                   ? CalendarDays
-                  : Baby;
+                  : Sprout;
 
               return (
                 <Pressable
@@ -268,7 +315,7 @@ function PreferenceScreen() {
                   >
                     <Icon
                       size={28}
-                      strokeWidth={1.8}
+                      strokeWidth={1.9}
                       color={
                         isSelected
                           ? "#FFFFFF"
@@ -277,7 +324,11 @@ function PreferenceScreen() {
                     />
                   </View>
 
-                  <View style={styles.optionTextContainer}>
+                  <View
+                    style={
+                      styles.optionTextContainer
+                    }
+                  >
                     <Text
                       style={[
                         styles.optionTitle,
@@ -348,13 +399,16 @@ function PreferenceScreen() {
                   },
                 ]}
               >
-                You can change this later from settings.
+                You can change this later from
+                settings.
               </Text>
             )}
 
             <Pressable
               onPress={handleContinue}
-              disabled={!selectedMode || isSubmitting}
+              disabled={
+                !selectedMode || isSubmitting
+              }
               accessibilityRole="button"
               accessibilityLabel="Continue"
               accessibilityState={{
@@ -369,8 +423,6 @@ function PreferenceScreen() {
                     theme.primaryButton,
                   shadowColor: theme.shadow,
                 },
-                !selectedMode &&
-                  styles.continueButtonDisabled,
                 pressed &&
                   selectedMode &&
                   !isSubmitting &&
@@ -551,12 +603,12 @@ const styles = StyleSheet.create({
 
   continueButton: {
     width: "100%",
-    minHeight: 50,
+    minHeight: 48,
     borderRadius: 999,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     shadowOffset: {
       width: 0,
       height: 8,
@@ -564,10 +616,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.22,
     shadowRadius: 16,
     elevation: 5,
-  },
-
-  continueButtonDisabled: {
-    opacity: 0.55,
   },
 
   continueButtonPressed: {

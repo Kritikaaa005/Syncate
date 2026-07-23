@@ -6,7 +6,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "understanding-cycle",
     title: "Understanding Your Menstrual Cycle",
     category: "Cycle Basics",
-    short_description: "Explore the different phases of your cycle.",
+    author: "Syncate Team",
+    short_description:
+      "Explore the different phases of your cycle.",
     content: [
       "Your menstrual cycle is more than just your period. It includes several phases that work together through hormone changes.",
       "The menstrual phase begins when bleeding starts. This is when the uterus sheds its lining.",
@@ -21,7 +23,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "ovulation",
     title: "Ovulation: What Happens?",
     category: "Fertility",
-    short_description: "Learn about ovulation and your fertile window.",
+    author: "Syncate Team",
+    short_description:
+      "Learn about ovulation and your fertile window.",
     content: [
       "Ovulation is the time when an ovary releases an egg. It usually happens around 14 days before the next period.",
       "The fertile window includes the days before ovulation and the day of ovulation.",
@@ -35,7 +39,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "period-care",
     title: "Period Care Essentials",
     category: "Period Care",
-    short_description: "Tips for a comfortable and healthy period.",
+    author: "Syncate Team",
+    short_description:
+      "Tips for a comfortable and healthy period.",
     content: [
       "Period care means keeping your body comfortable, clean, hydrated, and supported.",
       "Change pads, tampons, or menstrual cups regularly.",
@@ -49,7 +55,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "nutrition",
     title: "Nutrition for Hormone Balance",
     category: "Wellness",
-    short_description: "Foods that support your hormones and mood.",
+    author: "Syncate Team",
+    short_description:
+      "Foods that support your hormones and mood.",
     content: [
       "Food cannot magically balance hormones, but regular meals and nutrients can support your body.",
       "Iron-rich foods may help during or after bleeding.",
@@ -63,7 +71,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "stress",
     title: "Managing Stress and Mood",
     category: "Mental Wellness",
-    short_description: "Simple ways to reduce stress and feel your best.",
+    author: "Syncate Team",
+    short_description:
+      "Simple ways to reduce stress and feel your best.",
     content: [
       "Stress can affect sleep, appetite, mood, and sometimes cycle patterns.",
       "Try breathing exercises, journaling, or short walks.",
@@ -77,7 +87,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "hydration",
     title: "Hydration and Your Cycle",
     category: "Wellness",
-    short_description: "Why staying hydrated matters every day.",
+    author: "Syncate Team",
+    short_description:
+      "Why staying hydrated matters every day.",
     content: [
       "Hydration supports energy, digestion, skin, and comfort throughout the cycle.",
       "Drinking enough water may help with bloating and headaches.",
@@ -91,7 +103,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "sleep",
     title: "Sleep and Hormones",
     category: "Lifestyle",
-    short_description: "How good sleep supports your cycle and energy.",
+    author: "Syncate Team",
+    short_description:
+      "How good sleep supports your cycle and energy.",
     content: [
       "Sleep supports hormone regulation, mood, focus, and recovery.",
       "Hormonal changes can affect sleep before your period.",
@@ -105,7 +119,9 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
     slug: "tracking",
     title: "Tracking Your Cycle: Why It Helps",
     category: "Tracking",
-    short_description: "Benefits of tracking and understanding patterns.",
+    author: "Syncate Team",
+    short_description:
+      "Benefits of tracking and understanding patterns.",
     content: [
       "Tracking helps you notice patterns in your period, symptoms, mood, and energy.",
       "You can better prepare for your period.",
@@ -116,6 +132,10 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
   },
 ];
 
-export function findFallbackArticle(slug: string): BackendArticle | undefined {
-  return FALLBACK_ARTICLES.find((article) => article.slug === slug);
+export function findFallbackArticle(
+  slug: string
+): BackendArticle | undefined {
+  return FALLBACK_ARTICLES.find(
+    (article) => article.slug === slug
+  );
 }
