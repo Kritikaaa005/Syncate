@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: syncate-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-syncate_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-default_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - syncate_pg_data:/var/lib/postgresql/data
+
+volumes:
+  syncate_pg_data:
