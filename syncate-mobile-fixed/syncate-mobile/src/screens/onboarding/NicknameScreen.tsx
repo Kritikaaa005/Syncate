@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -19,6 +20,7 @@ import { updateNickname } from "@/services/userService";
 
 function NicknameScreen() {
   const { isDark, toggleDark } = useTheme();
+  const { t } = useTranslation("onboarding");
 
   const theme = isDark
     ? guestTheme.mode.dark
