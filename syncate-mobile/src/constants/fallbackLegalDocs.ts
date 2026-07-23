@@ -33,3 +33,31 @@ export const FALLBACK_GUEST_PRIVACY: BackendLegalDocument = {
     "2. Educational Content\nArticles you read are served from our servers, but reading them isn't tied to any personal identifier.",
   ].join("\n\n"),
 };
+
+export const FALLBACK_REGISTERED_TERMS: BackendLegalDocument = {
+  id: "fallback-registered-terms",
+  doc_type: "registered_terms",
+  title: "Terms of Service",
+  version: "1.0",
+  effective_date: "",
+  content: [
+    "Welcome to Syncate. By creating an account, you agree to be bound by these Terms of Service. Please read them carefully.",
+    "Syncate is a personal health companion designed to help you track menstrual cycles, fertility, and general wellness. The information provided within the app is for personal tracking purposes only and does not constitute medical advice.",
+    "1. Eligibility\nYou must be at least 13 years of age to use Syncate.",
+    "2. Not Medical Advice\nNone of the content in this application should be interpreted as medical advice, diagnosis, or treatment. Always consult a qualified healthcare provider regarding any health questions or conditions.",
+    "3. Your Account\nYou're responsible for keeping your login details (if any) secure. If you never set a password or verified email, be aware that losing your device means losing access to this account, since there's no other way to recover it.",
+  ].join("\n\n"),
+};
+
+export const FALLBACK_REGISTERED_PRIVACY: BackendLegalDocument = {
+  id: "fallback-registered-privacy",
+  doc_type: "registered_privacy",
+  title: "Privacy Policy",
+  version: "1.0",
+  effective_date: "",
+  content: [
+    "This Privacy Policy explains how Syncate handles your information as a registered user.",
+    "1. What We Store\nYour cycle data, and, if you choose to provide them, your email address. We never sell your data to advertisers or data brokers.",
+    "2. Your Control\nYou can delete your account at any time. Deleting an account deactivates it immediately; your data is retained only as required for legal/audit purposes and is never used for anything else.",
+  ].join("\n\n"),
+};

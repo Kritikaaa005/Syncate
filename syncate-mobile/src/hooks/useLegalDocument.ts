@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-import { FALLBACK_GUEST_PRIVACY, FALLBACK_GUEST_TERMS } from "@/constants/fallbackLegalDocs";
+import { FALLBACK_GUEST_PRIVACY, FALLBACK_GUEST_TERMS, FALLBACK_REGISTERED_PRIVACY, FALLBACK_REGISTERED_TERMS } from "@/constants/fallbackLegalDocs";
 import { getLegalDocument } from "@/services/legalDocsService";
 import type { BackendLegalDocument, LegalDocType } from "@/types/legalDocument";
 
 const FALLBACKS: Partial<Record<LegalDocType, BackendLegalDocument>> = {
   guest_terms: FALLBACK_GUEST_TERMS,
   guest_privacy: FALLBACK_GUEST_PRIVACY,
+  registered_terms: FALLBACK_REGISTERED_TERMS,
+  registered_privacy: FALLBACK_REGISTERED_PRIVACY,
 };
 
 export function useLegalDocument(docType: LegalDocType) {

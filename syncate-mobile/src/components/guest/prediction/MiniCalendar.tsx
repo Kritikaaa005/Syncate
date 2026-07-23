@@ -1,7 +1,7 @@
 // Destination: components/guest/prediction/MiniCalendar.tsx
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Sparkle } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Sparkle } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   getCalendarCells,
@@ -15,6 +15,12 @@ type MiniCalendarProps = {
   value: string;
   onSelect: (value: string) => void;
   isDark: boolean;
+  // Off by default — the existing guest screens (log period, quick
+  // prediction) only ever need to step a month or two, so they keep the
+  // original two-arrow header. A DOB can be decades back, though, so
+  // DateOfBirthInput turns this on to add prev/next-year jumps too,
+  // rather than making everyone click through ~430 months to reach 1990.
+  enableYearNav?: boolean;
 };
 
 function chunkIntoWeeks<T>(items: T[]): T[][] {
@@ -25,7 +31,7 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
   return weeks;
 }
 
-function MiniCalendar({ value, onSelect, isDark }: MiniCalendarProps) {
+function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCalendarProps) {
   const selectedDate = parseDateValue(value);
   const [viewDate, setViewDate] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
@@ -47,6 +53,12 @@ function MiniCalendar({ value, onSelect, isDark }: MiniCalendarProps) {
   const goNextMonth = () =>
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
 
+  const goPrevYear = () =>
+    setViewDate((prev) => new Date(prev.getFullYear() - 1, prev.getMonth(), 1));
+
+  const goNextYear = () =>
+    setViewDate((prev) => new Date(prev.getFullYear() + 1, prev.getMonth(), 1));
+
   const goToday = () => {
     setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
     onSelect(toDateValue(today));
@@ -65,6 +77,16 @@ function MiniCalendar({ value, onSelect, isDark }: MiniCalendarProps) {
       ]}
     >
       <View style={[styles.monthHeader, { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" }]}>
+        {enableYearNav ? (
+          <Pressable
+            onPress={goPrevYear}
+            accessibilityLabel="Previous year"
+            style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+          >
+            <ChevronsLeft size={14} color={accent} />
+          </Pressable>
+        ) : null}
+
         <Pressable
           onPress={goPrevMonth}
           accessibilityLabel="Previous month"
@@ -85,6 +107,16 @@ function MiniCalendar({ value, onSelect, isDark }: MiniCalendarProps) {
         >
           <ChevronRight size={14} color={accent} />
         </Pressable>
+
+        {enableYearNav ? (
+          <Pressable
+            onPress={goNextYear}
+            accessibilityLabel="Next year"
+            style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+          >
+            <ChevronsRight size={14} color={accent} />
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.body}>
@@ -149,15 +181,17 @@ function MiniCalendar({ value, onSelect, isDark }: MiniCalendarProps) {
           </View>
         ))}
 
-        <Pressable
-          onPress={goToday}
-          style={[
-            styles.todayButton,
-            { borderColor: isDark ? "#3A2A38" : "#E8EEF8" },
-          ]}
-        >
-          <Text style={[styles.todayButtonText, { color: accent }]}>Jump to today</Text>
-        </Pressable>
+        {!enableYearNav ? (
+          <Pressable
+            onPress={goToday}
+            style={[
+              styles.todayButton,
+              { borderColor: isDark ? "#3A2A38" : "#E8EEF8" },
+            ]}
+          >
+            <Text style={[styles.todayButtonText, { color: accent }]}>Jump to today</Text>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );

@@ -282,3 +282,64 @@ class LegalDocument(models.Model):
         Usage: LegalDocument.get_active(LegalDocument.DocType.GUEST_TERMS)
         """
         return cls.objects.filter(doc_type=doc_type, is_active=True).first()
+
+
+class LegalDocumentAcceptance(models.Model):
+    """
+    Records that a REGISTERED (authenticated) user accepted a specific
+    version of a legal document. This is the registered-user counterpart
+    to the guest flow's on-device AsyncStorage consent record
+    (useGuestConsent.ts on mobile) — deliberately NOT the same mechanism,
+    because a real account changes what's actually correct here:
+
+    - It should follow the user across devices/reinstalls, not live only
+      on whichever phone they signed up on.
+    - For a genuine legal agreement tied to a real account, a server-side
+      record of "user X agreed to version Y at time Z" is the more
+      defensible one to have on hand later than a client-side flag.
+
+    `version` is a snapshot, not a live FK-follow-through to whatever the
+    document's version happens to be NOW — if it were, un-related
+    document edits could retroactively change what history says the user
+    agreed to. Deliberately mirrors LegalDocument.version's own
+    major.minor format/validator for the same "no free text" reason.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="legal_document_acceptances",
+    )
+
+    doc_type = models.CharField(
+        max_length=32,
+        choices=LegalDocument.DocType.choices,
+    )
+
+    version = models.CharField(
+        max_length=20,
+        validators=[version_format_validator],
+        help_text="Snapshot of the version that was active at the moment "
+        "of acceptance — never updated retroactively.",
+    )
+
+    accepted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # One row per (user, doc_type) — accepting a newer version
+        # UPDATES this row (new version + new timestamp) rather than
+        # piling up a new row per acceptance. Full history isn't the
+        # goal here; "what's the CURRENT state of this user's consent"
+        # is — same shape as the guest flow's one-record-per-doc-type
+        # AsyncStorage entry, just server-side.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "doc_type"],
+                name="unique_acceptance_per_user_per_doctype",
+            ),
+        ]
+        verbose_name = "Legal Document Acceptance"
+        verbose_name_plural = "Legal Document Acceptances"
+
+    def __str__(self):
+        return f"{self.user} accepted {self.doc_type} v{self.version}"

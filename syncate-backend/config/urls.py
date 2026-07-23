@@ -17,6 +17,19 @@ urlpatterns = [
     # API
     path("api/", include("articles.urls")),
     path("api/", include("legal_docs.urls")),
+    path("api/auth/", include("registration.urls")),
+]
+
+# users/urls.py exports two separate url groups on purpose — one's a
+# plain web page (no /api/ prefix, meant to be opened in a phone's
+# browser from an email link), the other's the real JSON API the mobile
+# app calls. Kept as two separate includes here so that split stays
+# visible at the project level instead of being buried inside one app.
+from users.urls import auth_api_urlpatterns, verification_page_urlpatterns  # noqa: E402
+
+urlpatterns += [
+    path("api/auth/", include(auth_api_urlpatterns)),
+    path("", include(verification_page_urlpatterns)),
 ]
 
 # Serve uploaded media during development

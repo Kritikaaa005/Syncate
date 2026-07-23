@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
 import SplashScreen from "@/screens/common/SplashScreen";
+import { getAccessToken } from "@/utils/tokenStorage";
 // If your project keeps it under components/common instead, adjust this import.
 
 const SPLASH_DURATION_MS = 2000;
@@ -16,11 +17,28 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/terms");
+    let active = true;
+
+    const timer = setTimeout(async () => {
+      // A saved access token means this device already has an account —
+      // route straight past the guest terms/register flow instead of
+      // creating a new account every cold start. This is only checking
+      // "does a token exist", not validating it's unexpired — an expired
+      // access token still refreshes fine via the refresh token, and a
+      // dead refresh token just means whatever screen we land on will
+      // itself hit a 401 and can bounce back to /terms then. That retry
+      // path isn't wired up yet — flagging it here as a known gap rather
+      // than solving it in this file, which only owns launch timing.
+      const token = await getAccessToken();
+      if (!active) return;
+
+      router.replace(token ? "/guest" : "/terms");
     }, SPLASH_DURATION_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [router]);
 
   return <SplashScreen />;

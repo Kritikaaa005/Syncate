@@ -44,9 +44,23 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "rest_framework",
+    # Ships with djangorestframework-simplejwt. Needed so BLACKLIST_AFTER_ROTATION
+    # (see SIMPLE_JWT below) has somewhere to actually store blacklisted tokens —
+    # without this app registered, "blacklist after rotation" would silently do
+    # nothing.
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "articles",
    "users.apps.UsersConfig",
+
+    # registration: the account-creation flow (age/COPPA gate, optional
+    # email + password, email verification, JWT issuance on signup). Kept
+    # separate from `users` on purpose — `users` owns the ongoing shape of
+    # an account (UserProfile), this app owns the one-time act of CREATING
+    # one, which has a very different set of concerns (throttling,
+    # unauthenticated endpoints, token generation). See registration/README
+    # docstrings for the full reasoning.
+    "registration.apps.RegistrationConfig",
 
     # accounts: existed as an empty stub before, wasn't even registered
     # here. Now houses the admin-account safety rules (see
@@ -86,7 +100,63 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.AllowAny",
     ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+    # Scoped throttle for the registration endpoint specifically — it's
+    # unauthenticated by nature (nobody has an account yet) and issues real
+    # JWTs, so it needs its own abuse limit independent of general API
+    # traffic. See registration/views.py for where the scope is applied.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "register": "10/hour",
+        "email-verification-resend": "5/hour",
+    },
 }
+
+from datetime import timedelta  # noqa: E402 (kept near SIMPLE_JWT for locality)
+
+SIMPLE_JWT = {
+    # Short-lived on purpose — if one leaks (e.g. a compromised device's
+    # memory dump), the exposure window is small.
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    # Deliberately long (30 days, not the more common 7) — this is a
+    # period-tracking app opened sporadically across a month, and an
+    # active user's refresh keeps extending this anyway (see below), so
+    # this mostly only matters for someone who genuinely goes quiet.
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    # Every refresh issues a NEW refresh token and immediately invalidates
+    # the old one — a stolen old refresh token becomes useless the moment
+    # the legitimate device refreshes again.
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    # An active user's session effectively never expires (each refresh
+    # resets the 30-day clock) — only someone who stops using the app
+    # entirely for 30 days actually gets logged out.
+    "UPDATE_LAST_LOGIN": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# --- Email (for the account-verification link) ---
+# Console backend for now: verification emails print straight to this
+# terminal instead of actually sending anywhere — zero setup needed for
+# local dev. Swap EMAIL_BACKEND (via .env) for a real SMTP/API-based
+# provider (SendGrid, Mailgun, SES, Gmail SMTP...) when there's an actual
+# provider to point at; nothing else in the codebase needs to change,
+# since everything sends via Django's send_mail(), not a hardcoded backend.
+EMAIL_BACKEND = os.environ.get(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@syncate.app")
+
+# Used to build the verification link inside the email (e.g.
+# "http://192.168.1.71:8000/verify-email/<token>/") — needs to be
+# reachable by whatever device opens the email, so on a phone this has to
+# be your machine's LAN IP, not 127.0.0.1. Mirrors the same LAN-IP problem
+# solved on the mobile side by getApiBaseUrl.ts.
+BACKEND_PUBLIC_URL = os.environ.get("BACKEND_PUBLIC_URL", "http://127.0.0.1:8000")
 
 # === CHANGED: all 5 DB values now come from .env instead of hardcoded ===
 DATABASES = {

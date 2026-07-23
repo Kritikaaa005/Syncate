@@ -1,7 +1,12 @@
 // Destination: src/screens/common/TermsPrivacyScreen.tsx
 //
-// Light mode only, same reasoning as SplashScreen — this is pre-account
-// onboarding, shown before the user has any theme preference to honor.
+// Theme-aware, same pattern as QuickPredictionScreen — reads the
+// persisted/system preference via useTheme() rather than pinning light
+// mode. (Previously pinned to light on purpose, reasoning being this is
+// pre-account onboarding before the user has set an in-app preference —
+// but ThemeContext already resolves a preference before this screen ever
+// renders, either the persisted choice or the OS-level scheme, so
+// there's always something real to honor here, not a placeholder.)
 //
 // Doesn't fetch data (documents are passed in) and doesn't decide where
 // to navigate after agreeing (onAgree is provided by the caller) — this
@@ -13,9 +18,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View
 
 import LegalDocumentBody from "@/components/common/LegalDocumentBody";
 import { guestTheme } from "@/constants/guestTheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import type { BackendLegalDocument } from "@/types/legalDocument";
-
-const colors = guestTheme.mode.light;
 
 type TermsPrivacyScreenProps = {
   documents: BackendLegalDocument[];
@@ -24,6 +28,8 @@ type TermsPrivacyScreenProps = {
 };
 
 export default function TermsPrivacyScreen({ documents, loading, onAgree }: TermsPrivacyScreenProps) {
+  const { isDark } = useTheme();
+  const colors = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
   const ready = documents.length > 0;
 
   return (
@@ -42,7 +48,10 @@ export default function TermsPrivacyScreen({ documents, loading, onAgree }: Term
         ) : (
           <ScrollView showsVerticalScrollIndicator contentContainerStyle={styles.scrollContent}>
             {documents.map((document, index) => (
-              <View key={document.doc_type} style={index > 0 ? styles.documentSpacing : undefined}>
+              <View
+                key={document.doc_type}
+                style={index > 0 ? [styles.documentSpacing, { borderTopColor: colors.border }] : undefined}
+              >
                 <Text style={[styles.documentTitle, { color: colors.text }]}>{document.title}</Text>
                 <LegalDocumentBody
                   content={document.content}
@@ -109,7 +118,6 @@ const styles = StyleSheet.create({
     marginTop: 28,
     paddingTop: 20,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#00000022",
   },
   loadingSpinner: {
     marginTop: 40,

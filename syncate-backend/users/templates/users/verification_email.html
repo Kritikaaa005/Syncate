@@ -1,0 +1,27 @@
+{# users/templates/users/verification_email.html #}
+{# The HTML version of the verification email — send_mail() sends this   #}
+{# alongside the plain-text version in services.py, and email clients    #}
+{# that render HTML will show this instead. Deliberately simple: no      #}
+{# external CSS/images (many email clients strip both), just inline      #}
+{# styles and a single obvious button so the token is only ever a link,  #}
+{# never something to copy/type. #}
+<!DOCTYPE html>
+<html>
+  <body style="margin:0; padding:32px 16px; background-color:#F8FBFF; font-family:Helvetica,Arial,sans-serif;">
+    <div style="max-width:420px; margin:0 auto; text-align:center;">
+      <h1 style="font-size:20px; color:#1E1730; margin-bottom:8px;">Confirm your email</h1>
+      <p style="font-size:14px; color:#6B6478; line-height:20px; margin-bottom:24px;">
+        Tap the button below to confirm this email address for your Syncate account.
+        This link expires in 24 hours.
+      </p>
+      <a href="{{ verify_url }}"
+         style="display:inline-block; background-color:#F2386A; color:#FFFFFF; text-decoration:none;
+                font-weight:bold; font-size:15px; padding:14px 32px; border-radius:30px;">
+        Confirm Email
+      </a>
+      <p style="font-size:12px; color:#9C97A6; margin-top:28px;">
+        Didn't request this? You can safely ignore this email.
+      </p>
+    </div>
+  </body>
+</html>

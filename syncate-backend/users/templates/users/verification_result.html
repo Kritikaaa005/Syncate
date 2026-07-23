@@ -1,0 +1,26 @@
+{# users/templates/users/verification_result.html #}
+{# The plain web page someone lands on after tapping the emailed link.   #}
+{# Not part of the mobile app — this is a normal server-rendered page,   #}
+{# on purpose (see services.py send_verification_email() docstring for  #}
+{# why we didn't build app deep-linking for this). #}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Syncate — Email Verification</title>
+  </head>
+  <body style="margin:0; padding:48px 20px; background-color:#F8FBFF; font-family:Helvetica,Arial,sans-serif; text-align:center;">
+    {% if success %}
+      <div style="font-size:48px; margin-bottom:16px;">&#10003;</div>
+      <h1 style="color:#1E1730; font-size:22px;">Email confirmed</h1>
+      <p style="color:#6B6478; font-size:14px;">You can close this page and go back to Syncate.</p>
+    {% else %}
+      <div style="font-size:48px; margin-bottom:16px;">&#10007;</div>
+      <h1 style="color:#1E1730; font-size:22px;">Link no longer valid</h1>
+      <p style="color:#6B6478; font-size:14px;">
+        This verification link has already been used or has expired.
+        Request a new one from Settings in the app.
+      </p>
+    {% endif %}
+  </body>
+</html>

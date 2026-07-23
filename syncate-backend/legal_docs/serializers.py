@@ -19,7 +19,22 @@ dashboard need very different shapes of the same model.
 """
 from rest_framework import serializers
 
-from .models import LegalDocument
+from .models import LegalDocument, LegalDocumentAcceptance
+
+
+class LegalDocumentAcceptanceSerializer(serializers.ModelSerializer):
+    """
+    What GET /api/legal-documents/my-acceptances/ returns — deliberately
+    just doc_type + version (the version the user accepted), no id/user/
+    timestamp. The mobile app's job is exactly "does my accepted version
+    match the CURRENTLY active version for this doc_type" — same
+    comparison useGuestConsent.ts already does locally for guests, just
+    against a server-side record instead of AsyncStorage here.
+    """
+
+    class Meta:
+        model = LegalDocumentAcceptance
+        fields = ["doc_type", "version"]
 
 
 class PublicLegalDocumentSerializer(serializers.ModelSerializer):
