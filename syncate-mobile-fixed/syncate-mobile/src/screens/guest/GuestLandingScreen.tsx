@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import GuestActionCard from "@/components/guest/landing/GuestActionCard";
 import GuestLandingHeader from "@/components/guest/landing/GuestLandingHeader";
@@ -11,20 +12,21 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 export default function GuestLanding() {
   const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { t } = useTranslation("guest");
 
   return (
     <SafeAreaView
       style={[
         styles.safeArea,
         {
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         },
       ]}
     >
       <ScrollView
         style={{
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -37,24 +39,24 @@ export default function GuestLanding() {
               style={[
                 styles.introTitle,
                 {
-                  color: t.text,
+                  color: theme.text,
                 },
               ]}
             >
-              Your health,
+              {t("landing_title_line1")}
               {"\n"}
-             beautifully simplified.
+              {t("landing_title_line2")} 
             </Text>
 
             <Text
               style={[
                 styles.introSubtitle,
                 {
-                  color: t.muted,
+                  color: theme.muted,
                 },
               ]}
             >
-              Explore essential period insights before creating your account.
+              {t("landing_subtitle")} 
             </Text>
           </View>
 
@@ -62,17 +64,17 @@ export default function GuestLanding() {
             style={[
               styles.sectionTitle,
               {
-                color: t.text,
+                color: theme.text,
               },
             ]}
           >
-            What would you like to do today?
+            {t("landing_question")}
           </Text>
 
           <View style={styles.actionsList}>
             {guestActions.map((action) => (
               <GuestActionCard
-                key={action.title}
+                key={action.titleKey}
                 action={action}
               />
             ))}
@@ -103,20 +105,20 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
-introSection: {
+  introSection: {
     marginTop: 32,
     marginBottom: 40,
     alignItems: "center",
     paddingHorizontal: 16,
-},
+  },
 
- introTitle: {
+  introTitle: {
     fontSize: 24,
     lineHeight: 31,
     fontWeight: "600",
     textAlign: "center",
     marginBottom: 14,
-},
+  },
 
   introSubtitle: {
     maxWidth: 350,

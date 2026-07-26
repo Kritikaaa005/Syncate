@@ -1,12 +1,14 @@
 import { router } from "expo-router";
 import { ArrowRight } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { moreFeatures } from "@/constants/guestLandingData";
 import { useTheme } from "@/contexts/ThemeContext";
 import GuestFeatureItem from "./GuestFeatureItem";
 
 function GuestMoreFeatures() {
   const { isDark } = useTheme();
+  const { t } = useTranslation("guest");
 
   const textColor = isDark ? "#F3EDF1" : "#1E1730";
   const mutedColor = isDark ? "#B7ACB8" : "#8D8A99";
@@ -23,17 +25,17 @@ function GuestMoreFeatures() {
       ]}
     >
       <Text style={[styles.heading, { color: textColor }]}>
-        More with{" "}
+        {t("more_with")}{" "}
         <Text style={[styles.highlight, { color: primaryColor }]}>Syncate</Text>
       </Text>
 
       <Text style={[styles.subheading, { color: mutedColor }]}>
-        Create a free account to unlock powerful features.
+        {t("more_subheading")}
       </Text>
 
       <View style={styles.featureGrid}>
         {moreFeatures.map((feature) => (
-          <View key={feature.label} style={styles.featureGridItem}>
+          <View key={feature.labelKey} style={styles.featureGridItem}>
             <GuestFeatureItem feature={feature} />
           </View>
         ))}
@@ -49,7 +51,7 @@ function GuestMoreFeatures() {
           pressed && styles.pressedScale,
         ]}
       >
-        <Text style={styles.ctaButtonText}>Create Free Account</Text>
+        <Text style={styles.ctaButtonText}>{t("create_free_account")}</Text>
       </Pressable>
 
       <View style={styles.learnMoreRow}>
@@ -61,7 +63,7 @@ function GuestMoreFeatures() {
           ]}
         >
           <Text style={[styles.learnMoreText, { color: primaryColor }]}>
-            Learn more
+            {t("learn_more")}
           </Text>
 
           <ArrowRight size={14} color={primaryColor} />

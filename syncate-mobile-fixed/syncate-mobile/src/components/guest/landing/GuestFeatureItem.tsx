@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { MoreFeature } from "@/constants/guestLandingData";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -8,6 +9,7 @@ type GuestFeatureItemProps = {
 
 function GuestFeatureItem({ feature }: GuestFeatureItemProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation("guest");
   const Icon = feature.icon;
 
   return (
@@ -32,7 +34,7 @@ function GuestFeatureItem({ feature }: GuestFeatureItemProps) {
         ]}
         numberOfLines={2}
       >
-        {feature.label}
+        {t(feature.labelKey)}
       </Text>
     </View>
   );

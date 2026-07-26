@@ -1,9 +1,4 @@
-// Destination: src/app/index.tsx
-//
-// Owns entry-point navigation timing only — how long the splash shows
-// and where it goes next. Rendering the splash itself is SplashScreen's
-// job; this file doesn't know how the splash looks.
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
@@ -15,12 +10,36 @@ export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // TODO: point to /terms once the Terms & Privacy screen route exists.
-      router.replace("/guest");
+    let active = true;
+
+    const timer = setTimeout(async () => {
+      try {
+        //commented out for testing purpose
+        
+        // const savedLanguage = await AsyncStorage.getItem("app_language");
+        // if (!active) return;
+
+        // if (savedLanguage) {
+        //   router.replace("/guest");
+        // } else {
+        //   router.replace("/language-select");
+        // }
+
+        if (!active) return;
+        router.replace("/language-select");
+
+      } catch (error) {
+        console.error("Error reading saved language:", error);
+        if (active) {
+          router.replace("/language-select");
+        }
+      }
     }, SPLASH_DURATION_MS);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [router]);
 
   return <SplashScreen />;

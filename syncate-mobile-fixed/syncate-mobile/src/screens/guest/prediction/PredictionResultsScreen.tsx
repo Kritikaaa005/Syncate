@@ -74,7 +74,7 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
 
 function PredictionResults() {
   const { isDark, toggleDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
 
   const params = useLocalSearchParams<{
     lastPeriodDate?: string;
@@ -229,13 +229,13 @@ function PredictionResults() {
       style={[
         styles.safeArea,
         {
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         },
       ]}
     >
       <ScrollView
         style={{
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

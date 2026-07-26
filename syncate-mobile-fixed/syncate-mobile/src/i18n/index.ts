@@ -5,12 +5,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import enCommon from './locales/en/common.json';
 import enOnboarding from './locales/en/onboarding.json';
+import enGuest from './locales/en/guest.json';          // ADDED
 import neCommon from './locales/ne/common.json';
 import neOnboarding from './locales/ne/onboarding.json';
+import neGuest from './locales/ne/guest.json';           // ADDED
 
 const resources = {
-  en: { common: enCommon, onboarding: enOnboarding },
-  ne: { common: neCommon, onboarding: neOnboarding },
+  en: { common: enCommon, onboarding: enOnboarding, guest: enGuest },   // ADDED guest
+  ne: { common: neCommon, onboarding: neOnboarding, guest: neGuest },   // ADDED guest
 };
 
 const LANGUAGE_KEY = 'app_language';
@@ -24,7 +26,7 @@ export async function initI18n() {
     resources,
     lng,
     fallbackLng: 'en',
-    ns: ['common', 'onboarding'],
+    ns: ['common', 'onboarding', 'guest'],   // ADDED guest
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     compatibilityJSON: 'v4',

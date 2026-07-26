@@ -27,7 +27,7 @@ export default function ArticleDetail() {
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
 
   const { article, loading, error } = usePublishedArticle(slug);
 
@@ -38,12 +38,12 @@ export default function ArticleDetail() {
   if (loading) {
     return (
       <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: t.background }]}
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
       >
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={t.primary} />
+          <ActivityIndicator size="large" color={theme.primary} />
 
-          <Text style={[styles.loadingText, { color: t.text }]}>
+          <Text style={[styles.loadingText, { color: theme.text }]}>
             Loading article...
           </Text>
         </View>
@@ -54,25 +54,25 @@ export default function ArticleDetail() {
   if (error || !article) {
     return (
       <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: t.background }]}
+        style={[styles.safeArea, { backgroundColor: theme.background }]}
       >
         <View style={styles.errorWrap}>
           <Pressable
             onPress={goBackToArticles}
             style={({ pressed }) => [
               styles.errorBackButton,
-              { backgroundColor: t.primarySoft },
+              { backgroundColor: theme.primarySoft },
               pressed && styles.pressed,
             ]}
           >
-            <ArrowLeft size={18} color={t.primary} />
+            <ArrowLeft size={18} color={theme.primary} />
 
-            <Text style={[styles.errorBackText, { color: t.primary }]}>
+            <Text style={[styles.errorBackText, { color: theme.primary }]}>
               Back to articles
             </Text>
           </Pressable>
 
-          <Text style={[styles.errorText, { color: t.text }]}>
+          <Text style={[styles.errorText, { color: theme.text }]}>
             {error || "Article not found."}
           </Text>
         </View>
@@ -87,10 +87,10 @@ export default function ArticleDetail() {
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: t.background }]}
+      style={[styles.safeArea, { backgroundColor: theme.background }]}
     >
       <ScrollView
-        style={{ backgroundColor: t.background }}
+        style={{ backgroundColor: theme.background }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -102,20 +102,20 @@ export default function ArticleDetail() {
               accessibilityLabel="Back to articles"
               style={({ pressed }) => [
                 styles.backButton,
-                { backgroundColor: t.primarySoft },
+                { backgroundColor: theme.primarySoft },
                 pressed && styles.pressed,
               ]}
             >
-              <ArrowLeft size={20} color={t.primary} />
+              <ArrowLeft size={20} color={theme.primary} />
             </Pressable>
 
             <View
               style={[
                 styles.categoryPill,
-                { backgroundColor: t.primarySoft },
+                { backgroundColor: theme.primarySoft },
               ]}
             >
-              <Text style={[styles.categoryText, { color: t.primary }]}>
+              <Text style={[styles.categoryText, { color: theme.primary }]}>
                 {article.category}
               </Text>
             </View>
@@ -134,38 +134,38 @@ export default function ArticleDetail() {
             style={[
               styles.introCard,
               {
-                borderColor: t.border,
-                backgroundColor: t.card,
+                borderColor: theme.border,
+                backgroundColor: theme.card,
               },
             ]}
           >
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: t.primarySoft },
+                { backgroundColor: theme.primarySoft },
               ]}
             >
-              <Sparkles size={22} color={t.primary} />
+              <Sparkles size={22} color={theme.primary} />
             </View>
 
-            <Text style={[styles.title, { color: t.text }]}>
+            <Text style={[styles.title, { color: theme.text }]}>
               {article.title}
             </Text>
 
             {!!article.author && (
               <View style={styles.authorRow}>
-                <UserRound size={14} color={t.primary} />
+                <UserRound size={14} color={theme.primary} />
 
-                <Text style={[styles.authorText, { color: t.muted }]}>
+                <Text style={[styles.authorText, { color: theme.muted }]}>
                   By {article.author}
                 </Text>
               </View>
             )}
 
             <View style={styles.metaRow}>
-              <Clock size={14} color={t.muted} />
+              <Clock size={14} color={theme.muted} />
 
-              <Text style={[styles.metaText, { color: t.muted }]}>
+              <Text style={[styles.metaText, { color: theme.muted }]}>
                 Educational article
               </Text>
             </View>
@@ -175,12 +175,12 @@ export default function ArticleDetail() {
             style={[
               styles.bodyCard,
               {
-                borderColor: t.border,
-                backgroundColor: t.card,
+                borderColor: theme.border,
+                backgroundColor: theme.card,
               },
             ]}
           >
-            <Text style={[styles.description, { color: t.muted }]}>
+            <Text style={[styles.description, { color: theme.muted }]}>
               {article.short_description}
             </Text>
 
@@ -188,7 +188,7 @@ export default function ArticleDetail() {
               {paragraphs.map((paragraph, index) => (
                 <Text
                   key={`${article.slug}-${index}`}
-                  style={[styles.paragraph, { color: t.text }]}
+                  style={[styles.paragraph, { color: theme.text }]}
                 >
                   {paragraph}
                 </Text>

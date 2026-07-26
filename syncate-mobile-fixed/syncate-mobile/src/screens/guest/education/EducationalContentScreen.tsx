@@ -9,7 +9,7 @@ import { usePublishedArticles } from "@/hooks/usePublishedArticles";
 
 export default function EducationalContent() {
   const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
 
   const { articles } = usePublishedArticles();
 
@@ -18,28 +18,28 @@ export default function EducationalContent() {
       style={[
         styles.safeArea,
         {
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         },
       ]}
     >
       <ScrollView
         style={{
-          backgroundColor: t.background,
+          backgroundColor: theme.background,
         }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
           <EducationHeader
-            primary={t.primary}
-            primarySoft={t.primarySoft}
+            primary={theme.primary}
+            primarySoft={theme.primarySoft}
           />
 
           <Text
             style={[
               styles.subtitle,
               {
-                color: t.muted,
+                color: theme.muted,
               },
             ]}
           >
@@ -50,7 +50,7 @@ export default function EducationalContent() {
           <View style={styles.grid}>
             {articles.map((article) => (
               <View key={article.slug} style={styles.gridItem}>
-                <ArticleCard article={article} theme={t} />
+                <ArticleCard article={article} theme={theme} />
               </View>
             ))}
           </View>

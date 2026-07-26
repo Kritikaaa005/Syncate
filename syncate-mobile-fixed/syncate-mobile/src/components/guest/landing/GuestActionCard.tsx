@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import type { GuestAction } from "@/constants/guestLandingData";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -10,6 +11,7 @@ type GuestActionCardProps = {
 
 function GuestActionCard({ action }: GuestActionCardProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation("guest");
   const Icon = action.icon;
 
   return (
@@ -44,7 +46,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        {action.title}
+        {t(action.titleKey)}
       </Text>
 
       <View
@@ -64,7 +66,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        {action.description}
+        {t(action.descriptionKey)}
       </Text>
 
       <View
@@ -75,7 +77,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        <Text style={styles.buttonText}>{action.buttonText}</Text>
+        <Text style={styles.buttonText}>{t(action.buttonTextKey)}</Text>
       </View>
     </Pressable>
   );

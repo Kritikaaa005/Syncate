@@ -33,7 +33,7 @@ import { calculateCyclePrediction } from "@/utils/predictUtils";
 
 export default function QuickPrediction() {
   const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
 
   const [lastPeriodDate, setLastPeriodDate] = useState("2025-05-20");
   const [cycleType, setCycleType] = useState("short");
@@ -74,9 +74,9 @@ export default function QuickPrediction() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: t.background }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
-        style={{ backgroundColor: t.background }}
+        style={{ backgroundColor: theme.background }}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.content}>
@@ -169,15 +169,15 @@ export default function QuickPrediction() {
                               ? "#FF7CA3"
                               : "#F2386A"
                             : isDark
-                            ? "#3A2A38"
-                            : "#E8EEF8",
+                              ? "#3A2A38"
+                              : "#E8EEF8",
                           backgroundColor: selected
                             ? isDark
                               ? "#3A2430"
                               : "#FCE7EF"
                             : isDark
-                            ? "#221A28"
-                            : "#FFFFFF",
+                              ? "#221A28"
+                              : "#FFFFFF",
                         },
                       ]}
                     >

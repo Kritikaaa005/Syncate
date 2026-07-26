@@ -1,0 +1,24 @@
+{
+  "landing_title_line1": "Your health,",
+  "landing_title_line2": "beautifully simplified.",
+  "landing_subtitle": "Explore essential period insights before creating your account.",
+  "landing_question": "What would you like to do today?",
+
+  "action_quick_prediction_title": "Quick Prediction",
+  "action_quick_prediction_description": "Log a few details and get your next period, ovulation, and cycle phases instantly.",
+  "action_quick_prediction_button": "Predict My Cycle",
+  "action_educational_title": "Educational Content",
+  "action_educational_description": "Explore articles and guides about periods, hormones, wellness, and more.",
+  "action_educational_button": "Explore Articles",
+  "feature_save_cycle_history": "Save cycle history",
+  "feature_ai_assistant": "AI Health Assistant",
+  "feature_track_symptoms": "Track symptoms & moods",
+  "feature_pregnancy_tracking": "Pregnancy tracking",
+  "feature_medication_reminders": "Medication reminders",
+  "feature_community_support": "Community support",
+
+  "more_with": "More with",
+  "more_subheading": "Create a free account to unlock powerful features.",
+  "create_free_account": "Create Free Account",
+  "learn_more": "Learn more"
+}
