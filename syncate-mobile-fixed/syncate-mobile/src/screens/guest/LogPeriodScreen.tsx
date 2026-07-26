@@ -30,6 +30,7 @@ import {
   Timer,
 } from "lucide-react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Pressable,
   ScrollView,
@@ -58,6 +59,7 @@ const CYCLE_TYPES = [
 
 export default function LogYourPeriod() {
   const [isDark, setIsDark] = useState(false);
+  const { t } = useTranslation("guest");
   const [lastPeriodDate, setLastPeriodDate] = useState(toDateValue(new Date()));
   const [cycleType, setCycleType] = useState("short");
   const [periodDuration, setPeriodDuration] = useState(5);
@@ -118,13 +120,12 @@ export default function LogYourPeriod() {
           </View>
 
           <View style={styles.heroWrap}>
-            <Text style={[styles.heroEyebrow, { color: pink }]}>Quick Prediction</Text>
+            <Text style={[styles.heroEyebrow, { color: pink }]}>{t("action_quick_prediction_title")}</Text>
             <Text style={[styles.heroTitle, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
-              Log your period
+              {t("log_period_title")}
             </Text>
             <Text style={[styles.heroSubtitle, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}>
-              Enter your last period details to get accurate predictions and
-              cycle insights.
+              {t("log_period_description")}
             </Text>
           </View>
 
@@ -316,7 +317,7 @@ export default function LogYourPeriod() {
               pressed && styles.pressedScale,
             ]}
           >
-            <Text style={styles.calculateButtonText}>Calculate My Predictions</Text>
+            <Text style={styles.calculateButtonText}>{t("calculate_button")}</Text>
             <Sparkles size={16} color="#FFFFFF" />
           </Pressable>
         </View>

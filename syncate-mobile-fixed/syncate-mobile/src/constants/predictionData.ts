@@ -2,12 +2,12 @@
 
 export type CycleTypeOption = {
   id: string;
-  label: string;
-  detail: string;
+  labelKey: string;
+  detailKey: string;
 };
 
 export const CYCLE_TYPES: CycleTypeOption[] = [
-  { id: "short", label: "Short", detail: "Less than 24 days" },
-  { id: "medium", label: "Medium", detail: "24 – 35 days" },
-  { id: "long", label: "Long", detail: "More than 35 days" },
+  { id: "short", labelKey: "cycle_type_short_label", detailKey: "cycle_type_short_detail" },
+  { id: "medium", labelKey: "cycle_type_medium_label", detailKey: "cycle_type_medium_detail" },
+  { id: "long", labelKey: "cycle_type_long_label", detailKey: "cycle_type_long_detail" },
 ];

@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import ArticleCard from "@/components/guest/education/ArticleCard";
 import EducationHeader from "@/components/guest/education/EducationHeader";
@@ -10,6 +11,7 @@ import { usePublishedArticles } from "@/hooks/usePublishedArticles";
 export default function EducationalContent() {
   const { isDark } = useTheme();
   const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { t } = useTranslation("guest");
 
   const { articles } = usePublishedArticles();
 
@@ -43,8 +45,7 @@ export default function EducationalContent() {
               },
             ]}
           >
-            Learn more about your cycle, your body, and how to take care of
-            yourself.
+            {t("education_subtitle")}
           </Text>
 
           <View style={styles.grid}>

@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -32,13 +33,23 @@ import {
   toDateValue,
 } from "@/utils/calendarUtils";
 
-const CYCLE_TYPE_LABEL: Record<string, string> = {
-  short: "Short",
-  medium: "Medium",
-  long: "Long",
+// Reuses the same keys as constants/predictionData.ts CYCLE_TYPES —
+// same 3 words, no need for a second translation set.
+const CYCLE_TYPE_KEY: Record<string, string> = {
+  short: "cycle_type_short_label",
+  medium: "cycle_type_medium_label",
+  long: "cycle_type_long_label",
 };
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAY_KEYS = [
+  "weekday_mon",
+  "weekday_tue",
+  "weekday_wed",
+  "weekday_thu",
+  "weekday_fri",
+  "weekday_sat",
+  "weekday_sun",
+];
 
 type PhaseKey = "period" | "ovulation" | "follicular" | "luteal";
 
@@ -55,11 +66,11 @@ type PhaseStyle = {
   darkText: string;
 };
 
-const PHASE_LEGEND: { key: PhaseKey; label: string }[] = [
-  { key: "period", label: "Period" },
-  { key: "ovulation", label: "Ovulation" },
-  { key: "follicular", label: "Follicular Phase" },
-  { key: "luteal", label: "Luteal Phase" },
+const PHASE_LEGEND: { key: PhaseKey; labelKey: string }[] = [
+  { key: "period", labelKey: "phase_period" },
+  { key: "ovulation", labelKey: "phase_ovulation" },
+  { key: "follicular", labelKey: "phase_follicular" },
+  { key: "luteal", labelKey: "phase_luteal" },
 ];
 
 function chunkIntoWeeks<T>(items: T[]): T[][] {
@@ -75,6 +86,7 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
 function PredictionResults() {
   const { isDark, toggleDark } = useTheme();
   const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { t } = useTranslation("guest");
 
   const params = useLocalSearchParams<{
     lastPeriodDate?: string;
@@ -246,7 +258,7 @@ function PredictionResults() {
               <Pressable
                 onPress={() => router.back()}
                 accessibilityRole="button"
-                accessibilityLabel="Go back"
+                accessibilityLabel={t("go_back")}
                 style={({ pressed }) => [
                   styles.circleButton,
                   {
@@ -264,7 +276,7 @@ function PredictionResults() {
               <Pressable
                 onPress={toggleDark}
                 accessibilityRole="button"
-                accessibilityLabel="Toggle dark mode"
+                accessibilityLabel={t("toggle_dark_mode")}
                 style={({ pressed }) => [
                   styles.circleButton,
                   {
@@ -289,7 +301,7 @@ function PredictionResults() {
                 },
               ]}
             >
-              Your Predictions
+              {t("results_title")}
             </Text>
           </View>
 
@@ -310,7 +322,7 @@ function PredictionResults() {
                 },
               ]}
             >
-              Next period starts on
+              {t("next_period_label")}
             </Text>
 
             <Text
@@ -341,8 +353,8 @@ function PredictionResults() {
                 ]}
               >
                 {daysUntilNextPeriod >= 0
-                  ? `That's in ${daysUntilNextPeriod} days`
-                  : "This date has passed"}
+                  ? t("days_until_period", { count: daysUntilNextPeriod })
+                  : t("date_has_passed")}
               </Text>
             </View>
           </View>
@@ -379,7 +391,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                Cycle Length
+                {t("cycle_length_label")}
               </Text>
 
               <Text
@@ -390,7 +402,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                {cycleLength} days
+                {t("days_count", { count: cycleLength })}
               </Text>
             </View>
 
@@ -425,7 +437,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                Period Duration
+                {t("period_duration_label")}
               </Text>
 
               <Text
@@ -436,7 +448,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                {periodDuration} days
+                {t("days_count", { count: periodDuration })}
               </Text>
             </View>
 
@@ -471,7 +483,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                Cycle Type
+                {t("cycle_type_label")}
               </Text>
 
               <Text
@@ -482,7 +494,7 @@ function PredictionResults() {
                   },
                 ]}
               >
-                {CYCLE_TYPE_LABEL[cycleType] ?? "Regular"}
+                {CYCLE_TYPE_KEY[cycleType] ? t(CYCLE_TYPE_KEY[cycleType]) : t("cycle_type_regular")}
               </Text>
             </View>
           </View>
@@ -500,7 +512,7 @@ function PredictionResults() {
               <Pressable
                 onPress={goPrevMonth}
                 accessibilityRole="button"
-                accessibilityLabel="Previous month"
+                accessibilityLabel={t("previous_month")}
                 hitSlop={10}
                 style={({ pressed }) => [
                   styles.calendarNavButton,
@@ -527,7 +539,7 @@ function PredictionResults() {
               <Pressable
                 onPress={goNextMonth}
                 accessibilityRole="button"
-                accessibilityLabel="Next month"
+                accessibilityLabel={t("next_month")}
                 hitSlop={10}
                 style={({ pressed }) => [
                   styles.calendarNavButton,
@@ -542,9 +554,9 @@ function PredictionResults() {
             </View>
 
             <View style={styles.weekdayRow}>
-              {WEEKDAY_LABELS.map((label) => (
+              {WEEKDAY_KEYS.map((key) => (
                 <Text
-                  key={label}
+                  key={key}
                   style={[
                     styles.weekdayLabel,
                     {
@@ -552,7 +564,7 @@ function PredictionResults() {
                     },
                   ]}
                 >
-                  {label}
+                  {t(key)}
                 </Text>
               ))}
             </View>
@@ -675,7 +687,7 @@ function PredictionResults() {
             </View>
 
             <View style={styles.legendRow}>
-              {PHASE_LEGEND.map(({ key, label }) => (
+              {PHASE_LEGEND.map(({ key, labelKey }) => (
                 <View key={key} style={styles.legendItem}>
                   <View
                     style={[
@@ -694,7 +706,7 @@ function PredictionResults() {
                       },
                     ]}
                   >
-                    {label}
+                    {t(labelKey)}
                   </Text>
                 </View>
               ))}
@@ -718,7 +730,7 @@ function PredictionResults() {
                 },
               ]}
             >
-              About your cycle
+              {t("about_cycle_title")}
             </Text>
 
             <Text
@@ -729,11 +741,11 @@ function PredictionResults() {
                 },
               ]}
             >
-              Your next period is predicted to start on{" "}
+              {t("about_cycle_prefix")}{" "}
               <Text style={styles.bold}>
                 {formatLongDate(nextPeriodStart)}
               </Text>{" "}
-              and your ovulation is likely on{" "}
+              {t("about_cycle_middle")}{" "}
               <Text style={styles.bold}>
                 {formatLongDate(ovulationDate)}
               </Text>
@@ -752,7 +764,7 @@ function PredictionResults() {
             ]}
           >
             <Text style={styles.primaryButtonText}>
-              Log Period Again
+              {t("log_period_again")}
             </Text>
           </Pressable>
 
@@ -776,7 +788,7 @@ function PredictionResults() {
                 },
               ]}
             >
-              Go to Educational Content
+              {t("go_to_educational_content")}
             </Text>
 
             <ArrowRight

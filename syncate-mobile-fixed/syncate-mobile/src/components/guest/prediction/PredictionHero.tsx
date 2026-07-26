@@ -2,10 +2,12 @@
 
 import { Sparkle } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function PredictionHero() {
   const { isDark } = useTheme();
+  const { t } = useTranslation("guest");
 
   const sparkleStrong = isDark ? "rgba(255,124,163,0.7)" : "rgba(242,56,106,0.6)";
   const sparkleWeak = isDark ? "rgba(255,124,163,0.5)" : "rgba(242,56,106,0.4)";
@@ -30,16 +32,15 @@ function PredictionHero() {
       </View>
 
       <Text style={[styles.titleLine1, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
-        Quick Prediction
+        {t("action_quick_prediction_title")} 
       </Text>
 
       <Text style={[styles.titleLine2, { color: isDark ? "#FF7CA3" : "#F2386A" }]}>
-        Log your period
+        {t("log_period_title")}
       </Text>
 
       <Text style={[styles.subtitle, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}>
-        Enter your last period details to get accurate predictions and cycle
-        insights.
+        {t("log_period_description")}
       </Text>
     </View>
   );
@@ -61,6 +62,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   titleLine2: {
+    marginTop: 10,
     fontSize: 27,
     fontWeight: "600",
     lineHeight: 32,

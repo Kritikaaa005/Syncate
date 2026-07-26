@@ -2,6 +2,7 @@
 
 import { Sparkles } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type CalculateButtonProps = {
@@ -10,6 +11,7 @@ type CalculateButtonProps = {
 
 function CalculateButton({ onPress }: CalculateButtonProps) {
   const { isDark } = useTheme();
+  const { t } = useTranslation("guest");
 
   return (
     <View style={styles.wrap}>
@@ -21,7 +23,7 @@ function CalculateButton({ onPress }: CalculateButtonProps) {
           pressed && styles.pressedScale,
         ]}
       >
-        <Text style={styles.buttonText}>Calculate My Predictions</Text>
+        <Text style={styles.buttonText}>{t("calculate_button")}</Text>
         <Sparkles size={13} color="#FFFFFF" />
       </Pressable>
     </View>

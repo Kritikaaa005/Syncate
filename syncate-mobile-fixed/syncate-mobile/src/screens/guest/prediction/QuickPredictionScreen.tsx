@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import CalculateButton from "@/components/guest/prediction/CalculateButton";
 import MiniCalendar from "@/components/guest/prediction/MiniCalendar";
@@ -34,6 +35,7 @@ import { calculateCyclePrediction } from "@/utils/predictUtils";
 export default function QuickPrediction() {
   const { isDark } = useTheme();
   const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { t } = useTranslation("guest");
 
   const [lastPeriodDate, setLastPeriodDate] = useState("2025-05-20");
   const [cycleType, setCycleType] = useState("short");
@@ -55,10 +57,6 @@ export default function QuickPrediction() {
       periodDuration,
     });
 
-    // React Router's navigate(..., { state }) has no direct equivalent in
-    // Expo Router; params must be serializable strings. We pass the raw
-    // inputs and re-derive the prediction on the results screen (same
-    // calculateCyclePrediction() call, so the output is identical).
     router.push({
       pathname: "/guest/predict/results",
       params: {
@@ -94,7 +92,7 @@ export default function QuickPrediction() {
           >
             <View style={styles.fieldBlock}>
               <Text style={[styles.fieldLabel, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
-                1. Last period start date
+                {t("predict_step1_label")}
               </Text>
 
               <View>
@@ -144,13 +142,13 @@ export default function QuickPrediction() {
             <View style={styles.fieldBlock}>
               <View style={styles.fieldLabelRow}>
                 <Text style={[styles.fieldLabel, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
-                  2. Cycle type
+                  {t("predict_step2_label")}
                 </Text>
                 <Info size={14} color={isDark ? "#B7ACB8" : "#8D8A99"} />
               </View>
 
               <Text style={[styles.fieldHint, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}>
-                Select the option that best describes your typical cycle length.
+                {t("predict_cycle_type_hint")}
               </Text>
 
               <View style={styles.cycleTypeGrid}>
@@ -197,7 +195,7 @@ export default function QuickPrediction() {
                             { color: isDark ? "#F3EDF1" : "#1E1730" },
                           ]}
                         >
-                          {type.label}
+                          {t(type.labelKey)}
                         </Text>
                         {selected && (
                           <View
@@ -217,7 +215,7 @@ export default function QuickPrediction() {
                           { color: isDark ? "#B7ACB8" : "#8D8A99" },
                         ]}
                       >
-                        {type.detail}
+                        {t(type.detailKey)}
                       </Text>
                     </Pressable>
                   );
@@ -228,7 +226,7 @@ export default function QuickPrediction() {
             <View style={styles.durationBlock}>
               <View style={styles.fieldLabelRow}>
                 <Text style={[styles.fieldLabel, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
-                  3. Period duration
+                  {t("predict_step3_label")}
                 </Text>
                 <Info size={14} color={isDark ? "#B7ACB8" : "#8D8A99"} />
               </View>
@@ -241,7 +239,7 @@ export default function QuickPrediction() {
               >
                 <Pressable
                   onPress={decrementDuration}
-                  accessibilityLabel="Decrease period duration"
+                  accessibilityLabel={t("decrease_period_duration")}
                 >
                   <Minus size={20} color={isDark ? "#FF7CA3" : "#F2386A"} />
                 </Pressable>
@@ -258,20 +256,20 @@ export default function QuickPrediction() {
                   <Text
                     style={[styles.durationUnit, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}
                   >
-                    days
+                    {t("days_unit")}
                   </Text>
                 </View>
 
                 <Pressable
                   onPress={incrementDuration}
-                  accessibilityLabel="Increase period duration"
+                  accessibilityLabel={t("increase_period_duration")}
                 >
                   <Plus size={20} color={isDark ? "#FF7CA3" : "#F2386A"} />
                 </Pressable>
               </View>
 
               <Text style={[styles.durationHint, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}>
-                The number of days your period usually lasts.
+                {t("period_duration_hint")}
               </Text>
             </View>
 
@@ -309,6 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   fieldLabel: {
+    marginBottom: 12,
     fontSize: 15,
     fontWeight: "500",
   },
