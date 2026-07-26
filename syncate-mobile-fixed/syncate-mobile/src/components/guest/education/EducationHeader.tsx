@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import { ArrowLeft, Moon, Sun } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -11,12 +12,13 @@ type Props = {
 
 function EducationHeader({ primary, primarySoft }: Props) {
   const { isDark, toggleDark } = useTheme();
+  const { t } = useTranslation("guest");
 
   return (
     <View style={styles.row}>
       <Pressable
-onPress={() => router.back()}
-        accessibilityLabel="Go back"
+        onPress={() => router.back()}
+        accessibilityLabel={t("go_back")}
         style={({ pressed }) => [
           styles.iconButton,
           { backgroundColor: primarySoft },
@@ -34,12 +36,12 @@ onPress={() => router.back()}
           },
         ]}
       >
-        Educational Content
+        {t("education_content_title")}
       </Text>
 
       <Pressable
         onPress={toggleDark}
-        accessibilityLabel="Toggle dark mode"
+        accessibilityLabel={t("toggle_dark_mode")}
         style={({ pressed }) => [
           styles.iconButton,
           { backgroundColor: primarySoft },

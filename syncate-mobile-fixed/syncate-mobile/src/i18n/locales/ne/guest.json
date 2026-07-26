@@ -69,5 +69,14 @@
 "about_cycle_prefix": "तपाईंको अर्को महिनावारी सुरु हुने अनुमानित मिति हो",
 "about_cycle_middle": "र तपाईंको ओभुलेसन हुने सम्भावना छ",
 "log_period_again": "फेरि महिनावारी लग गर्नुहोस्",
-"go_to_educational_content": "शैक्षिक सामग्रीमा जानुहोस्"
+"go_to_educational_content": "शैक्षिक सामग्रीमा जानुहोस्",
+
+  "education_content_title": "शैक्षिक सामग्री",
+  "education_subtitle": "महिनावारी, हर्मोन, स्वास्थ्य र अन्य बारे लेख र मार्गदर्शनहरू अन्वेषण गर्नुहोस्।",
+
+  "loading_article": "लेख लोड हुँदैछ...",
+  "back_to_articles": "लेखहरूमा फर्कनुहोस्",
+  "article_not_found": "लेख फेला परेन।",
+  "by_author_prefix": "द्वारा",
+  "educational_article_label": "शैक्षिक लेख"
 }

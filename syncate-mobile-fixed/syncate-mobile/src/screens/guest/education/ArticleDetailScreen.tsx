@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -28,6 +29,7 @@ export default function ArticleDetail() {
 
   const { isDark } = useTheme();
   const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { t } = useTranslation("guest");
 
   const { article, loading, error } = usePublishedArticle(slug);
 
@@ -44,7 +46,7 @@ export default function ArticleDetail() {
           <ActivityIndicator size="large" color={theme.primary} />
 
           <Text style={[styles.loadingText, { color: theme.text }]}>
-            Loading article...
+            {t("loading_article")}
           </Text>
         </View>
       </SafeAreaView>
@@ -68,12 +70,14 @@ export default function ArticleDetail() {
             <ArrowLeft size={18} color={theme.primary} />
 
             <Text style={[styles.errorBackText, { color: theme.primary }]}>
-              Back to articles
+              {t("back_to_articles")}
             </Text>
           </Pressable>
 
+          {/* `error` comes from the backend hook — left as-is. Only the
+             fallback string "Article not found." is our own text. */}
           <Text style={[styles.errorText, { color: theme.text }]}>
-            {error || "Article not found."}
+            {error || t("article_not_found")}
           </Text>
         </View>
       </SafeAreaView>
@@ -99,7 +103,7 @@ export default function ArticleDetail() {
             <Pressable
               onPress={goBackToArticles}
               accessibilityRole="button"
-              accessibilityLabel="Back to articles"
+              accessibilityLabel={t("back_to_articles")}
               style={({ pressed }) => [
                 styles.backButton,
                 { backgroundColor: theme.primarySoft },
@@ -115,6 +119,7 @@ export default function ArticleDetail() {
                 { backgroundColor: theme.primarySoft },
               ]}
             >
+              {/* article.category — backend data, not translated here */}
               <Text style={[styles.categoryText, { color: theme.primary }]}>
                 {article.category}
               </Text>
@@ -148,6 +153,7 @@ export default function ArticleDetail() {
               <Sparkles size={22} color={theme.primary} />
             </View>
 
+            {/* article.title — backend data */}
             <Text style={[styles.title, { color: theme.text }]}>
               {article.title}
             </Text>
@@ -157,7 +163,7 @@ export default function ArticleDetail() {
                 <UserRound size={14} color={theme.primary} />
 
                 <Text style={[styles.authorText, { color: theme.muted }]}>
-                  By {article.author}
+                  {t("by_author_prefix")} {article.author}
                 </Text>
               </View>
             )}
@@ -166,7 +172,7 @@ export default function ArticleDetail() {
               <Clock size={14} color={theme.muted} />
 
               <Text style={[styles.metaText, { color: theme.muted }]}>
-                Educational article
+                {t("educational_article_label")}
               </Text>
             </View>
           </View>
@@ -180,6 +186,7 @@ export default function ArticleDetail() {
               },
             ]}
           >
+            {/* article.short_description and paragraphs — backend data */}
             <Text style={[styles.description, { color: theme.muted }]}>
               {article.short_description}
             </Text>

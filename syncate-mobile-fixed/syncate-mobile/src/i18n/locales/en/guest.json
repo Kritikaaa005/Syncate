@@ -71,5 +71,14 @@
 "about_cycle_prefix": "Your next period is predicted to start on",
 "about_cycle_middle": "and your ovulation is likely on",
 "log_period_again": "Log Period Again",
-"go_to_educational_content": "Go to Educational Content"
+"go_to_educational_content": "Go to Educational Content",
+
+  "education_content_title": "Educational Content",
+  "education_subtitle": "Explore articles and guides about periods, hormones, wellness, and more.",
+
+  "loading_article": "Loading article...",
+  "back_to_articles": "Back to articles",
+  "article_not_found": "Article not found.",
+  "by_author_prefix": "By",
+  "educational_article_label": "Educational article"
 }
