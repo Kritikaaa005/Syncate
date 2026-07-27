@@ -21,6 +21,8 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "192.168.1.72",
+    "192.168.10.71",
+       "100.68.187.99",
 ]
 
 
@@ -31,6 +33,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "cycle_tracking.apps.CycleTrackingConfig",
 
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -66,6 +69,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
     "http://localhost:19006",
     "http://127.0.0.1:8081",
+    "http://192.168.10.71:8081",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

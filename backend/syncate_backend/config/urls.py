@@ -21,11 +21,26 @@ admin.site.index_title = (
 
 urlpatterns = [
     # Django Admin
-    path("admin/", admin.site.urls),
+    path(
+        "admin/",
+        admin.site.urls,
+    ),
 
-    # Content APIs
-    path("api/", include("articles.urls")),
-    path("api/", include("legal_docs.urls")),
+    # Public content APIs
+    path(
+        "api/",
+        include("articles.urls"),
+    ),
+    path(
+        "api/",
+        include("legal_docs.urls"),
+    ),
+
+    # Cycle tracking
+    path(
+        "api/cycle/",
+        include("cycle_tracking.urls"),
+    ),
 
     # Registration
     path(
@@ -33,20 +48,20 @@ urlpatterns = [
         include("registration.urls"),
     ),
 
-    # Login and refresh-token endpoints
+    # Login and refresh token
     path(
         "api/auth/",
         include(auth_api_urlpatterns),
     ),
 
-    # Access-token verification
+    # Verify access token
     path(
         "api/auth/token/verify/",
         TokenVerifyView.as_view(),
-        name="token_verify",
+        name="token-verify",
     ),
 
-    # Authenticated user profile endpoints
+    # Nickname and tracking preference
     path(
         "api/users/",
         include("users.urls"),
@@ -55,7 +70,9 @@ urlpatterns = [
     # Browser page opened from verification email
     path(
         "",
-        include(verification_page_urlpatterns),
+        include(
+            verification_page_urlpatterns
+        ),
     ),
 ]
 

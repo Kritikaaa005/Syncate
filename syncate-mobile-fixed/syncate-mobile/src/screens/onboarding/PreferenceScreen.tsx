@@ -96,42 +96,30 @@ function PreferenceScreen() {
 };
 
 const handleContinue = async () => {
-  if (!selectedMode || isSubmitting) return;
+  if (!selectedMode || isSubmitting) {
+    return;
+  }
 
   setErrorMessage("");
   setIsSubmitting(true);
 
   try {
-    await updateTrackingMode(selectedMode);
+    await updateTrackingMode(
+      selectedMode
+    );
 
-    goToNextScreen(selectedMode);
+    goToNextScreen(
+      selectedMode
+    );
   } catch (error) {
-    const message =
+    setErrorMessage(
       error instanceof Error
         ? error.message
-        : "Could not save your preference. Please try again.";
-
-    const hasNoAccessToken =
-      message.includes("No access token") ||
-      message.includes("Please sign in again");
-
-    /*
-     * The authentication screens are being developed
-     * on another branch. Allow UI preview only while
-     * running the Expo development build.
-     *
-     * __DEV__ is false in production builds.
-     */
-    if (__DEV__ && hasNoAccessToken) {
-      console.warn(
-        "Tracking preference was not saved because authentication is not connected yet."
-      );
-
-      goToNextScreen(selectedMode);
-      return;
-    }
-
-    setErrorMessage(message);
+        : (
+            "Could not save your preference. "
+            + "Please try again."
+          )
+    );
   } finally {
     setIsSubmitting(false);
   }

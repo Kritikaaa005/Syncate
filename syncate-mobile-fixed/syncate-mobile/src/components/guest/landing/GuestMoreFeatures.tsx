@@ -1,9 +1,16 @@
-import { router } from "expo-router";
+import {
+  type Href,
+  router,
+} from "expo-router";
+
 import { ArrowRight } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { moreFeatures } from "@/constants/guestLandingData";
 import { useTheme } from "@/contexts/ThemeContext";
 import GuestFeatureItem from "./GuestFeatureItem";
+
+const LEARN_MORE_ROUTE =
+  "/guest/learn-more" as Href;
 
 function GuestMoreFeatures() {
   const { isDark } = useTheme();
@@ -54,7 +61,11 @@ function GuestMoreFeatures() {
 
       <View style={styles.learnMoreRow}>
         <Pressable
-          onPress={() => router.push("/about")}
+onPress={() => {
+  router.push(
+    LEARN_MORE_ROUTE
+  );
+}}
           style={({ pressed }) => [
             styles.learnMoreLink,
             pressed && styles.learnMorePressed,

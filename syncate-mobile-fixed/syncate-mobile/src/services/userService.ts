@@ -1,12 +1,8 @@
-import { getAccessToken } from "@/services/tokenService";
+import { authenticatedFetch } from "@/utils/authenticatedFetch";
 
-const DEFAULT_API_URL = "http://127.0.0.1:8000/api";
-
-const API_URL = (
-  process.env.EXPO_PUBLIC_API_URL ?? DEFAULT_API_URL
-).replace(/\/$/, "");
-
-export type TrackingMode = "period" | "pregnancy";
+export type TrackingMode =
+  | "period"
+  | "pregnancy";
 
 export type NicknameResponse = {
   profile_id: number;
@@ -22,72 +18,122 @@ export type TrackingModeResponse = {
   message: string;
 };
 
-async function getErrorMessage(response: Response): Promise<string> {
-  try {
-    const data = (await response.json()) as Record<string, unknown>;
-
-    if (typeof data.detail === "string") {
-      return data.detail;
-    }
-
-    for (const value of Object.values(data)) {
-      if (
-        Array.isArray(value) &&
-        typeof value[0] === "string"
-      ) {
-        return value[0];
-      }
-
-      if (typeof value === "string") {
-        return value;
-      }
-    }
-  } catch {
-    // The backend response was not JSON.
+function extractErrorMessage(
+  value: unknown
+): string | null {
+  if (typeof value === "string") {
+    return value;
   }
 
-  return `Request failed with status ${response.status}.`;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message =
+        extractErrorMessage(item);
+
+      if (message) {
+        return message;
+      }
+    }
+  }
+
+  if (
+    value &&
+    typeof value === "object"
+  ) {
+    for (
+      const nestedValue
+      of Object.values(value)
+    ) {
+      const message =
+        extractErrorMessage(
+          nestedValue
+        );
+
+      if (message) {
+        return message;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function getErrorMessage(
+  response: Response
+): Promise<string> {
+  try {
+    const data =
+      (await response.json()) as unknown;
+
+    const message =
+      extractErrorMessage(data);
+
+    if (message) {
+      return message;
+    }
+  } catch {
+    // Response was not JSON.
+  }
+
+  if (response.status === 401) {
+    return (
+      "Your session has expired. "
+      + "Please sign in again."
+    );
+  }
+
+  return (
+    `Request failed with status `
+    + `${response.status}.`
+  );
 }
 
 async function authenticatedPatch<T>(
   path: string,
   body: Record<string, unknown>
 ): Promise<T> {
-  const accessToken = await getAccessToken();
+  const controller =
+    new AbortController();
 
-  if (!accessToken) {
-    throw new Error(
-      "No access token was found. Please sign in again."
-    );
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    8000
+  );
 
   try {
-    const response = await fetch(`${API_URL}${path}`, {
-      method: "PATCH",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    const response =
+      await authenticatedFetch(
+        path,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }
+      );
 
     if (!response.ok) {
-      throw new Error(await getErrorMessage(response));
+      throw new Error(
+        await getErrorMessage(
+          response
+        )
+      );
     }
 
-    return (await response.json()) as T;
+    return (
+      await response.json()
+    ) as T;
   } catch (error) {
     if (
-      error instanceof Error &&
-      error.name === "AbortError"
+      error instanceof Error
+      && error.name === "AbortError"
     ) {
       throw new Error(
-        "The request took too long. Please try again."
+        "The request took too long. "
+        + "Please try again."
       );
     }
 
@@ -100,16 +146,22 @@ async function authenticatedPatch<T>(
 export function updateNickname(
   nickname: string
 ): Promise<NicknameResponse> {
-  return authenticatedPatch<NicknameResponse>(
+  return authenticatedPatch<
+    NicknameResponse
+  >(
     "/users/me/nickname/",
-    { nickname }
+    {
+      nickname,
+    }
   );
 }
 
 export function updateTrackingMode(
   trackingMode: TrackingMode
 ): Promise<TrackingModeResponse> {
-  return authenticatedPatch<TrackingModeResponse>(
+  return authenticatedPatch<
+    TrackingModeResponse
+  >(
     "/users/me/tracking-mode/",
     {
       tracking_mode: trackingMode,

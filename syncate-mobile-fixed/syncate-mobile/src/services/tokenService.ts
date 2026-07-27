@@ -1,37 +1,53 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const ACCESS_TOKEN_KEY = "syncate-access-token";
-const REFRESH_TOKEN_KEY = "syncate-refresh-token";
+import {
+  clearTokens,
+  getAccessToken as getStoredAccessToken,
+  getRefreshToken as getStoredRefreshToken,
+  saveTokens,
+} from "../utils/tokenStorage";
 
 export type AuthTokens = {
   access: string;
   refresh?: string;
 };
 
+/**
+ * Compatibility wrapper for older parts of the app.
+ *
+ * The actual storage logic now lives only in:
+ * src/utils/tokenStorage.ts
+ */
 export async function saveAuthTokens({
   access,
   refresh,
 }: AuthTokens): Promise<void> {
-  await AsyncStorage.setItem(ACCESS_TOKEN_KEY, access);
-
-  if (refresh) {
-    await AsyncStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-  } else {
-    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+  if (!access) {
+    throw new Error("An access token is required.");
   }
+
+  /*
+   * Some refresh responses may provide only a new access token.
+   * In that case, preserve the refresh token already stored.
+   */
+  const refreshToken =
+    refresh ?? (await getStoredRefreshToken());
+
+  if (!refreshToken) {
+    throw new Error(
+      "A refresh token is required to create an authenticated session."
+    );
+  }
+
+  await saveTokens(access, refreshToken);
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  return AsyncStorage.getItem(ACCESS_TOKEN_KEY);
+  return getStoredAccessToken();
 }
 
 export async function getRefreshToken(): Promise<string | null> {
-  return AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+  return getStoredRefreshToken();
 }
 
 export async function clearAuthTokens(): Promise<void> {
-  await AsyncStorage.multiRemove([
-    ACCESS_TOKEN_KEY,
-    REFRESH_TOKEN_KEY,
-  ]);
+  await clearTokens();
 }
