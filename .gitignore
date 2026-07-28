@@ -64,3 +64,4 @@ Thumbs.db
 # =========================
 backend/syncate_backend/.git-backup/
 syncate-mobile-fixed/.git-backup/
+backup_*.env
