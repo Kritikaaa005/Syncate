@@ -1,4 +1,3 @@
-import { CalendarDays } from "lucide-react-native";
 import {
   Pressable,
   StyleSheet,
@@ -35,10 +34,8 @@ function LogPeriodButton({
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor:
-            theme.primaryButton,
-          shadowColor:
-            theme.shadow,
+          backgroundColor: theme.card,
+          borderColor: theme.primary,
         },
         pressed &&
           !disabled &&
@@ -47,14 +44,15 @@ function LogPeriodButton({
           styles.buttonDisabled,
       ]}
     >
-      <CalendarDays
-        size={20}
-        strokeWidth={2}
-        color="#FFFFFF"
-      />
-
-      <Text style={styles.label}>
-        Log Period
+      <Text
+        style={[
+          styles.label,
+          {
+            color: theme.primary,
+          },
+        ]}
+      >
+        Log period
       </Text>
     </Pressable>
   );
@@ -63,42 +61,31 @@ function LogPeriodButton({
 const styles = StyleSheet.create({
   button: {
     width: "100%",
-    minHeight: 54,
-    marginTop: 20,
-    paddingHorizontal: 22,
-    borderRadius: 27,
-    flexDirection: "row",
+    minHeight: 52,
+    marginTop: 18,
+    borderWidth: 1,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 9,
+  },
 
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 5,
+  label: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "700",
   },
 
   buttonPressed: {
-    opacity: 0.9,
+    opacity: 0.65,
     transform: [
       {
-        scale: 0.985,
+        scale: 0.99,
       },
     ],
   },
 
   buttonDisabled: {
-    opacity: 0.55,
-  },
-
-  label: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: "700",
+    opacity: 0.45,
   },
 });
 

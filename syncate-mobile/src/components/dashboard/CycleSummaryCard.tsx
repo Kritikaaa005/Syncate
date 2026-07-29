@@ -1,4 +1,11 @@
-import { ChevronRight } from "lucide-react-native";
+import type { ReactNode } from "react";
+
+import {
+  ChevronRight,
+  Droplets,
+  Heart,
+  Plus,
+} from "lucide-react-native";
 import {
   Pressable,
   StyleSheet,
@@ -18,11 +25,86 @@ import CycleProgressRing from "./CycleProgressRing";
 type CycleSummaryCardProps = {
   summary: CycleSummary;
   onLearnMorePress?: () => void;
+  onLogPeriodPress?: () => void;
+  onSymptomsPress?: () => void;
+  onSexPress?: () => void;
 };
+
+type QuickActionProps = {
+  label: string;
+  icon: ReactNode;
+  active?: boolean;
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  onPress?: () => void;
+};
+
+function QuickAction({
+  label,
+  icon,
+  active = false,
+  primaryColor,
+  backgroundColor,
+  textColor,
+  onPress,
+}: QuickActionProps) {
+  const isDisabled = !onPress;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{
+        disabled: isDisabled,
+      }}
+      style={({ pressed }) => [
+        styles.quickAction,
+        pressed &&
+          !isDisabled &&
+          styles.quickActionPressed,
+        isDisabled &&
+          styles.quickActionDisabled,
+      ]}
+    >
+      <View
+        style={[
+          styles.quickActionCircle,
+          {
+            backgroundColor: active
+              ? primaryColor
+              : backgroundColor,
+          },
+        ]}
+      >
+        {icon}
+      </View>
+
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.quickActionLabel,
+          {
+            color: active
+              ? primaryColor
+              : textColor,
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function CycleSummaryCard({
   summary,
   onLearnMorePress,
+  onLogPeriodPress,
+  onSymptomsPress,
+  onSexPress,
 }: CycleSummaryCardProps) {
   const { isDark } = useTheme();
 
@@ -30,12 +112,21 @@ function CycleSummaryCard({
     ? guestTheme.mode.dark
     : guestTheme.mode.light;
 
+  const periodTiming =
+    summary.daysUntilNextPeriod === 0
+      ? "Expected today"
+      : summary.daysUntilNextPeriod === 1
+        ? "Expected in 1 day"
+        : `Expected in ${summary.daysUntilNextPeriod} days`;
+
   const ovulationTiming =
-    summary.daysUntilOvulation > 0
-      ? `In ${summary.daysUntilOvulation} days`
-      : summary.daysUntilOvulation === 0
-        ? "Estimated today"
-        : "Estimated date";
+    summary.daysUntilOvulation > 1
+      ? `Estimated in ${summary.daysUntilOvulation} days`
+      : summary.daysUntilOvulation === 1
+        ? "Estimated in 1 day"
+        : summary.daysUntilOvulation === 0
+          ? "Estimated today"
+          : "Estimated date";
 
   return (
     <View
@@ -43,106 +134,109 @@ function CycleSummaryCard({
         styles.card,
         {
           backgroundColor: theme.card,
-          borderColor: theme.border,
+          borderColor: theme.primarySoft,
           shadowColor: theme.shadow,
         },
       ]}
     >
-      <View style={styles.mainContent}>
-        <View style={styles.phaseSection}>
-          <Text
-            style={[
-              styles.eyebrow,
-              {
-                color: theme.muted,
-              },
-            ]}
-          >
-            You are in
-          </Text>
+      <Pressable
+        onPress={onLearnMorePress}
+        disabled={!onLearnMorePress}
+        accessibilityRole="button"
+        accessibilityLabel={`Read about the ${summary.phase.name}`}
+        style={({ pressed }) => [
+          styles.phaseArea,
+          pressed &&
+            Boolean(onLearnMorePress) &&
+            styles.phaseAreaPressed,
+        ]}
+      >
+        <View style={styles.phaseTopRow}>
+          <View style={styles.ringArea}>
+            <CycleProgressRing
+              cycleDay={summary.cycleDay}
+              cycleLength={summary.cycleLength}
+              primaryColor={theme.primary}
+              trackColor={theme.primarySoft}
+              textColor={theme.text}
+              mutedColor={theme.muted}
+            />
+          </View>
 
-          <Text
-            style={[
-              styles.phaseName,
-              {
-                color: theme.primary,
-              },
-            ]}
-          >
-            {summary.phase.name}
-          </Text>
-
-          <Text
-            style={[
-              styles.cycleDay,
-              {
-                color: theme.text,
-              },
-            ]}
-          >
-            Day {summary.cycleDay}{" "}
+          <View style={styles.phaseContent}>
             <Text
               style={[
-                styles.cycleDaySuffix,
+                styles.phaseContext,
                 {
-                  color: theme.muted,
+                  color: theme.primary,
                 },
               ]}
             >
-              of your cycle
+              DAY {summary.cycleDay} OF YOUR CYCLE
             </Text>
-          </Text>
 
-          <Pressable
-            onPress={onLearnMorePress}
-            disabled={!onLearnMorePress}
-            accessibilityRole="button"
-            accessibilityLabel={`Learn about the ${summary.phase.name}`}
-            style={({ pressed }) => [
-              styles.learnButton,
-              {
-                backgroundColor:
-                  theme.primarySoft,
-              },
-              pressed &&
-                Boolean(onLearnMorePress) &&
-                styles.learnButtonPressed,
-            ]}
-          >
             <Text
+              numberOfLines={2}
               style={[
-                styles.learnButtonText,
+                styles.phaseName,
                 {
                   color: theme.text,
                 },
               ]}
             >
-              What does this mean?
+              {summary.phase.name}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.educationArea,
+            {
+              borderTopColor:
+                theme.primarySoft,
+            },
+          ]}
+        >
+          <Text
+            numberOfLines={4}
+            style={[
+              styles.phaseDescription,
+              {
+                color: theme.text,
+              },
+            ]}
+          >
+            {summary.phase.description}
+          </Text>
+
+          <View style={styles.learnRow}>
+            <Text
+              style={[
+                styles.learnText,
+                {
+                  color: theme.primary,
+                },
+              ]}
+            >
+              Read about this phase
             </Text>
 
             <ChevronRight
-              size={16}
-              strokeWidth={2}
+              size={17}
+              strokeWidth={2.3}
               color={theme.primary}
             />
-          </Pressable>
+          </View>
         </View>
-
-        <CycleProgressRing
-          cycleDay={summary.cycleDay}
-          cycleLength={summary.cycleLength}
-          primaryColor={theme.primary}
-          trackColor={theme.primarySoft}
-          textColor={theme.text}
-          mutedColor={theme.muted}
-        />
-      </View>
+      </Pressable>
 
       <View
         style={[
           styles.predictionSection,
           {
-            borderTopColor: theme.border,
+            borderTopColor:
+              theme.primarySoft,
           },
         ]}
       >
@@ -151,14 +245,17 @@ function CycleSummaryCard({
             style={[
               styles.predictionLabel,
               {
-                color: theme.text,
+                color: theme.muted,
               },
             ]}
           >
-            Next Period
+            NEXT PERIOD
           </Text>
 
           <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
             style={[
               styles.predictionDate,
               {
@@ -172,22 +269,26 @@ function CycleSummaryCard({
           </Text>
 
           <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
             style={[
               styles.predictionTiming,
               {
-                color: theme.muted,
+                color: theme.text,
               },
             ]}
           >
-            In {summary.daysUntilNextPeriod} days
+            {periodTiming}
           </Text>
         </View>
 
         <View
           style={[
-            styles.divider,
+            styles.predictionDivider,
             {
-              backgroundColor: theme.border,
+              backgroundColor:
+                theme.primarySoft,
             },
           ]}
         />
@@ -197,14 +298,17 @@ function CycleSummaryCard({
             style={[
               styles.predictionLabel,
               {
-                color: theme.text,
+                color: theme.muted,
               },
             ]}
           >
-            Ovulation
+            OVULATION
           </Text>
 
           <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
             style={[
               styles.predictionDate,
               {
@@ -218,16 +322,81 @@ function CycleSummaryCard({
           </Text>
 
           <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
             style={[
               styles.predictionTiming,
               {
-                color: theme.muted,
+                color: theme.text,
               },
             ]}
           >
             {ovulationTiming}
           </Text>
         </View>
+      </View>
+
+      <View
+        style={[
+          styles.quickActionsSection,
+          {
+            borderTopColor:
+              theme.primarySoft,
+          },
+        ]}
+      >
+        <QuickAction
+          label="Log period"
+          active
+          onPress={onLogPeriodPress}
+          primaryColor={theme.primary}
+          backgroundColor={
+            theme.primarySoft
+          }
+          textColor={theme.text}
+          icon={
+          <Droplets
+  size={20}
+  strokeWidth={2}
+  color="#FFFFFF"
+/>
+          }
+        />
+
+        <QuickAction
+          label="Symptoms"
+          onPress={onSymptomsPress}
+          primaryColor={theme.primary}
+          backgroundColor={
+            theme.primarySoft
+          }
+          textColor={theme.text}
+          icon={
+          <Plus
+  size={22}
+  strokeWidth={2}
+  color={theme.text}
+/>
+          }
+        />
+
+        <QuickAction
+          label="Sex"
+          onPress={onSexPress}
+          primaryColor={theme.primary}
+          backgroundColor={
+            theme.primarySoft
+          }
+          textColor={theme.text}
+          icon={
+          <Heart
+  size={21}
+  strokeWidth={2}
+  color={theme.text}
+/>
+          }
+        />
       </View>
     </View>
   );
@@ -239,118 +408,176 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderRadius: 26,
+
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 7,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 22,
-    elevation: 4,
+
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    elevation: 3,
   },
 
-  mainContent: {
-    minHeight: 250,
-    paddingHorizontal: 22,
-    paddingTop: 26,
-    paddingBottom: 24,
+  phaseArea: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 17,
+  },
+
+  phaseAreaPressed: {
+    opacity: 0.78,
+  },
+
+  phaseTopRow: {
+    minHeight: 112,
     flexDirection: "row",
     alignItems: "center",
   },
 
-  phaseSection: {
-    flex: 1,
-    paddingRight: 14,
+  ringArea: {
+    width: 122,
+    flexShrink: 0,
+    marginLeft: 5,
+    alignItems: "flex-start",
+    justifyContent: "center",
   },
 
-  eyebrow: {
-    marginBottom: 5,
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: "500",
+  phaseContent: {
+    flex: 1,
+    minWidth: 0,
+    paddingLeft: 7,
+    justifyContent: "center",
+  },
+
+  phaseContext: {
+    marginBottom: 7,
+    fontSize: 10,
+    lineHeight: 14,
+    fontWeight: "700",
+    letterSpacing: 0.85,
   },
 
   phaseName: {
-    marginBottom: 14,
     fontSize: 25,
     lineHeight: 31,
     fontWeight: "700",
-    letterSpacing: -0.3,
+    letterSpacing: -0.45,
   },
 
-  cycleDay: {
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: "700",
+  educationArea: {
+    marginTop: 14,
+    borderTopWidth: 1,
+    paddingTop: 16,
   },
 
-  cycleDaySuffix: {
+  phaseDescription: {
+    fontSize: 14.5,
+    lineHeight: 22,
     fontWeight: "500",
   },
 
-  learnButton: {
-    alignSelf: "flex-start",
-    minHeight: 40,
-    marginTop: 22,
-    paddingHorizontal: 14,
-    borderRadius: 20,
+  learnRow: {
+    minHeight: 37,
+    marginTop: 10,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
+    alignSelf: "flex-start",
   },
 
-  learnButtonPressed: {
-    opacity: 0.74,
-    transform: [
-      {
-        scale: 0.98,
-      },
-    ],
-  },
-
-  learnButtonText: {
-    fontSize: 12.5,
-    lineHeight: 17,
-    fontWeight: "600",
+  learnText: {
+    marginRight: 2,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "700",
   },
 
   predictionSection: {
-    minHeight: 122,
+    minHeight: 116,
     borderTopWidth: 1,
+    paddingHorizontal: 19,
+    paddingVertical: 18,
     flexDirection: "row",
     alignItems: "center",
   },
 
   predictionItem: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 10,
+    minWidth: 0,
   },
 
   predictionLabel: {
     marginBottom: 7,
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: "600",
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "700",
+    letterSpacing: 0.8,
   },
 
   predictionDate: {
-    marginBottom: 4,
-    fontSize: 21,
-    lineHeight: 27,
+    marginBottom: 5,
+    fontSize: 24,
+    lineHeight: 30,
     fontWeight: "700",
+    letterSpacing: -0.35,
   },
 
   predictionTiming: {
-    textAlign: "center",
     fontSize: 11.5,
     lineHeight: 16,
+    fontWeight: "600",
   },
 
-  divider: {
+  predictionDivider: {
     width: 1,
-    height: 60,
+    height: 64,
+    marginHorizontal: 18,
+  },
+
+quickActionsSection: {
+  minHeight: 96,
+  borderTopWidth: 1,
+  paddingHorizontal: 28,
+  paddingTop: 13,
+  paddingBottom: 12,
+  flexDirection: "row",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+},
+
+
+  quickAction: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+  },
+
+quickActionCircle: {
+  width: 46,
+  height: 46,
+  marginBottom: 6,
+  borderRadius: 23,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+quickActionLabel: {
+  textAlign: "center",
+  fontSize: 10.5,
+  lineHeight: 14,
+  fontWeight: "600",
+},
+  quickActionPressed: {
+    opacity: 0.65,
+    transform: [
+      {
+        scale: 0.95,
+      },
+    ],
+  },
+
+  quickActionDisabled: {
+    opacity: 0.45,
   },
 });
 
