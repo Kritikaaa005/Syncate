@@ -1,5 +1,11 @@
-import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import {
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Svg, {
+  Circle,
+} from "react-native-svg";
 
 type CycleProgressRingProps = {
   cycleDay: number;
@@ -18,8 +24,8 @@ function CycleProgressRing({
   textColor,
   mutedColor,
 }: CycleProgressRingProps) {
-  const size = 132;
-  const strokeWidth = 10;
+  const size = 104;
+  const strokeWidth = 8;
 
   const radius =
     (size - strokeWidth) / 2;
@@ -27,9 +33,12 @@ function CycleProgressRing({
   const circumference =
     2 * Math.PI * radius;
 
+  const safeCycleLength =
+    Math.max(cycleLength, 1);
+
   const progress = Math.min(
     Math.max(
-      cycleDay / cycleLength,
+      cycleDay / safeCycleLength,
       0
     ),
     1
@@ -69,7 +78,7 @@ function CycleProgressRing({
           stroke={primaryColor}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          strokeDasharray={circumference}
+          strokeDasharray={`${circumference} ${circumference}`}
           strokeDashoffset={
             strokeDashoffset
           }
@@ -98,38 +107,40 @@ function CycleProgressRing({
             },
           ]}
         >
-          of {cycleLength} days
+          of {cycleLength}
         </Text>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    position: "relative",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+const styles =
+  StyleSheet.create({
+    container: {
+      position: "relative",
+      flexShrink: 0,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  content: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+    content: {
+      position: "absolute",
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  day: {
-    fontSize: 34,
-    lineHeight: 39,
-    fontWeight: "700",
-  },
+    day: {
+      fontSize: 25,
+      lineHeight: 29,
+      fontWeight: "700",
+    },
 
-  caption: {
-    maxWidth: 72,
-    textAlign: "center",
-    fontSize: 11.5,
-    lineHeight: 16,
-  },
-});
+    caption: {
+      marginTop: -1,
+      fontSize: 10,
+      lineHeight: 13,
+      fontWeight: "500",
+    },
+  });
 
 export default CycleProgressRing;
