@@ -42,6 +42,12 @@ urlpatterns = [
         include("cycle_tracking.urls"),
     ),
 
+    # Daily tracking
+    path(
+        "api/tracking/",
+        include("tracking.urls"),
+    ),
+
     # Registration
     path(
         "api/auth/",

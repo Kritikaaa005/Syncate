@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "cycle_tracking.apps.CycleTrackingConfig",
+    "tracking.apps.TrackingConfig",
 
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -156,7 +157,7 @@ DATABASES = {
         ),
         "PASSWORD": os.environ.get(
             "DB_PASSWORD",
-            "musa",
+            "default_password",
         ),
         "HOST": os.environ.get(
             "DB_HOST",
