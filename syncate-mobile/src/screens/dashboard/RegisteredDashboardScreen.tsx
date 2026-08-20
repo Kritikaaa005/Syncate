@@ -21,62 +21,13 @@ import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import useDashboardCycle from "@/hooks/useDashboardCycle";
 
+// === CHANGED: this used to point at the single-date logging
+// screen — that screen still exists, it just lives at
+// /dashboard/log-period now. /dashboard/calendar is the new
+// year-long phase view (see app/dashboard/calendar.tsx), which is
+// also what the bottom nav's Calendar tab already links to.
 const CALENDAR_ROUTE =
-  "/dashboard/calendar" as Href;
-
-const PHASE_ARTICLE_SLUGS = {
-  menstrual:
-    "understanding-the-menstrual-phase",
-  follicular:
-    "understanding-the-follicular-phase",
-  ovulation:
-    "understanding-ovulation",
-  luteal:
-    "understanding-the-luteal-phase",
-} as const;
-
-function getPhaseArticleSlug(
-  phaseName: string
-): string | null {
-  const normalizedPhase =
-    phaseName.trim().toLowerCase();
-
-  if (
-    normalizedPhase.includes(
-      "menstrual"
-    ) ||
-    normalizedPhase.includes("period")
-  ) {
-    return PHASE_ARTICLE_SLUGS.menstrual;
-  }
-
-  if (
-    normalizedPhase.includes(
-      "follicular"
-    )
-  ) {
-    return PHASE_ARTICLE_SLUGS.follicular;
-  }
-
-  if (
-    normalizedPhase.includes(
-      "ovulation"
-    ) ||
-    normalizedPhase.includes(
-      "ovulatory"
-    )
-  ) {
-    return PHASE_ARTICLE_SLUGS.ovulation;
-  }
-
-  if (
-    normalizedPhase.includes("luteal")
-  ) {
-    return PHASE_ARTICLE_SLUGS.luteal;
-  }
-
-  return null;
-}
+  "/dashboard/log-period" as Href;
 
 function RegisteredDashboardScreen() {
   const { isDark } = useTheme();
@@ -135,7 +86,9 @@ function RegisteredDashboardScreen() {
     );
   }
 
-  if (dashboardState === "unknown") {
+  // === CHANGED: "unknown" -> "awaiting_first_period", matching the
+  // rename in cycleService.ts / useDashboardCycle.ts.
+  if (dashboardState === "awaiting_first_period") {
     return (
       <UnknownCycleState
         nickname={nickname}
@@ -165,12 +118,8 @@ function RegisteredDashboardScreen() {
   }
 
   const handleLearnMore = () => {
-    const phaseName =
-      cycleSummary.phase.name ||
-      cycleSummary.phase.estimatedName;
-
     const articleSlug =
-      getPhaseArticleSlug(phaseName);
+      cycleSummary.phase.articleSlug;
 
     if (!articleSlug) {
       Alert.alert(

@@ -1,191 +1,133 @@
+# LOCATION: syncate-backend/cycle_tracking/serializers.py
+# (replaces the existing file)
+#
+# Dashboard-building logic used to live here (to_representation was doing
+# WAY more than a serializer should — pulling related models, running
+# calculate_cycle_dashboard, building the whole payload). That's moved to
+# services.build_dashboard_for_user() now. These two serializers just do
+# serializer things: validate input, shape output.
+
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import CycleProfile
-from .services import calculate_cycle_dashboard
+from .models import CycleProfile, PeriodLog
 
 
-class LastPeriodSerializer(
-    serializers.ModelSerializer
-):
+class PeriodLogSerializer(serializers.ModelSerializer):
+    """
+    Used for both listing a user's period history and logging a new
+    one. start_date is the only thing that's actually required — you
+    can log "my period started on X" without knowing when it'll end.
+    """
+
+    class Meta:
+        model = PeriodLog
+        fields = (
+            "id",
+            "start_date",
+            "end_date",
+            "date_confidence",
+            "created_at",
+        )
+        read_only_fields = ("id", "created_at")
+
+    def validate_start_date(self, value):
+        if value > timezone.localdate():
+            raise serializers.ValidationError("Start date can't be in the future.")
+        return value
+
+    def validate(self, attrs):
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+
+        if start_date and end_date and end_date < start_date:
+            raise serializers.ValidationError(
+                {"end_date": "End date can't be before the start date."}
+            )
+
+        # === NEW: catch the duplicate-date case HERE, before it ever
+        # reaches the database. The DB's unique constraint would still
+        # block it either way (that's its job, it stays as a safety
+        # net) — but without this check, a duplicate blows up as an
+        # unhandled Django ValidationError deep inside .save(), which
+        # DRF doesn't know how to turn into a clean 400. Checking here
+        # means the person just gets a normal "you already logged
+        # this" message instead of a server-crash page.
+        # === CHANGED: now excludes self.instance when editing, so
+        # PATCHing a period without changing its date (or nudging it
+        # by a day and back) doesn't falsely flag itself as a
+        # duplicate of... itself. On CREATE, self.instance is None,
+        # so this behaves exactly as before.
+        request = self.context.get("request")
+        if request and start_date:
+            duplicate_exists = (
+                PeriodLog.objects.filter(user=request.user, start_date=start_date)
+                .exclude(pk=self.instance.pk if self.instance else None)
+                .exists()
+            )
+
+            if duplicate_exists:
+                raise serializers.ValidationError(
+                    {"start_date": "You've already logged a period starting on this date."}
+                )
+
+        return attrs
+
+
+class CycleProfileSerializer(serializers.ModelSerializer):
+    """
+    Onboarding answers: cycle length + period length, each with a
+    confidence flag. This is where the "idk" branching actually
+    happens — if the frontend sends confidence="unknown" for a field,
+    we don't trust whatever number came with it (there shouldn't be
+    one, but never trust the client) and just fall back to the
+    population-average default instead.
+    """
+
     class Meta:
         model = CycleProfile
         fields = (
-            "last_period_status",
-            "last_period_start_date",
+            "cycle_length_days",
+            "cycle_length_confidence",
+            "period_length_days",
+            "period_length_confidence",
         )
+
+    def _resolve_field(self, attrs, days_field, confidence_field, default_days, instance):
+        """
+        Shared logic for both cycle_length and period_length — same
+        rule applies to each: "unknown" wins over whatever number was
+        sent, everything else needs a real number in range.
+        """
+
+        current_days = getattr(instance, days_field, default_days) if instance else default_days
+        current_confidence = (
+            getattr(instance, confidence_field, "unknown") if instance else "unknown"
+        )
+
+        confidence = attrs.get(confidence_field, current_confidence)
+        days = attrs.get(days_field, current_days)
+
+        if confidence == CycleProfile.EstimateConfidence.UNKNOWN:
+            attrs[days_field] = default_days
+        elif days is None:
+            raise serializers.ValidationError(
+                {days_field: "A value is required unless confidence is 'unknown'."}
+            )
+        else:
+            attrs[days_field] = days
+
+        attrs[confidence_field] = confidence
+        return attrs
 
     def validate(self, attrs):
         instance = self.instance
 
-        current_status = (
-            instance.last_period_status
-            if instance
-            else "not_provided"
+        attrs = self._resolve_field(
+            attrs, "cycle_length_days", "cycle_length_confidence", 28, instance
         )
-
-        current_start_date = (
-            instance.last_period_start_date
-            if instance
-            else None
+        attrs = self._resolve_field(
+            attrs, "period_length_days", "period_length_confidence", 5, instance
         )
-
-        period_status = attrs.get(
-            "last_period_status",
-            current_status,
-        )
-
-        start_date = attrs.get(
-            "last_period_start_date",
-            current_start_date,
-        )
-
-        if period_status not in {
-            "known",
-            "unknown",
-        }:
-            raise serializers.ValidationError(
-                {
-                    "last_period_status": (
-                        "Status must be known "
-                        "or unknown."
-                    )
-                }
-            )
-
-        if period_status == "known":
-            if not start_date:
-                raise serializers.ValidationError(
-                    {
-                        "last_period_start_date": (
-                            "A period start date "
-                            "is required when the "
-                            "status is known."
-                        )
-                    }
-                )
-
-            if start_date > timezone.localdate():
-                raise serializers.ValidationError(
-                    {
-                        "last_period_start_date": (
-                            "The period start date "
-                            "cannot be in the future."
-                        )
-                    }
-                )
-
-        if period_status == "unknown":
-            attrs[
-                "last_period_start_date"
-            ] = None
 
         return attrs
-
-    def to_representation(
-        self,
-        instance,
-    ):
-        data = super().to_representation(
-            instance
-        )
-
-        user_profile = getattr(
-            instance.user,
-            "profile",
-            None,
-        )
-
-        saved_nickname = getattr(
-            user_profile,
-            "nickname",
-            "",
-        )
-
-        data.update(
-            {
-                "nickname": (
-                    saved_nickname.strip()
-                    if (
-                        isinstance(
-                            saved_nickname,
-                            str,
-                        )
-                        and saved_nickname.strip()
-                    )
-                    else "there"
-                ),
-                "dashboard_state": "unknown",
-                "cycle_day": None,
-                "cycle_length": None,
-                "phase": None,
-                "current_cycle_start_date": None,
-                "next_period_date": None,
-                "estimated_ovulation_date": None,
-                "days_until_next_period": None,
-                "days_until_ovulation": None,
-                "prediction_basis": None,
-            }
-        )
-
-        if (
-            instance.last_period_status
-            != "known"
-            or not instance
-            .last_period_start_date
-        ):
-            return data
-
-        dashboard = (
-            calculate_cycle_dashboard(
-                instance
-                .last_period_start_date
-            )
-        )
-
-        data.update(
-            {
-                "dashboard_state": "known",
-                "cycle_day": dashboard[
-                    "cycle_day"
-                ],
-                "cycle_length": dashboard[
-                    "cycle_length"
-                ],
-                "phase": dashboard[
-                    "phase"
-                ],
-                "current_cycle_start_date": (
-                    dashboard[
-                        "current_cycle_start_date"
-                    ].isoformat()
-                ),
-                "next_period_date": (
-                    dashboard[
-                        "next_period_date"
-                    ].isoformat()
-                ),
-                "estimated_ovulation_date": (
-                    dashboard[
-                        "estimated_ovulation_date"
-                    ].isoformat()
-                ),
-                "days_until_next_period": (
-                    dashboard[
-                        "days_until_next_period"
-                    ]
-                ),
-                "days_until_ovulation": (
-                    dashboard[
-                        "days_until_ovulation"
-                    ]
-                ),
-                "prediction_basis": (
-                    dashboard[
-                        "prediction_basis"
-                    ]
-                ),
-            }
-        )
-
-        return data

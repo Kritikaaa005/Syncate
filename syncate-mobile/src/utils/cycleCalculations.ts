@@ -15,6 +15,7 @@ export type CyclePhaseDetails = {
   name: string;
   estimatedName: string;
   description: string;
+  articleSlug: string | null;
 };
 
 export type CycleSummary = {
@@ -134,6 +135,7 @@ export function getCyclePhase(
         "Likely Menstrual Phase",
       description:
         "Your period may be active, and your body may need extra rest and care.",
+      articleSlug: null,
     };
   }
 
@@ -145,6 +147,7 @@ export function getCyclePhase(
         "Likely Follicular Phase",
       description:
         "Your body may be preparing for ovulation.",
+      articleSlug: null,
     };
   }
 
@@ -156,6 +159,7 @@ export function getCyclePhase(
         "Estimated Ovulation Window",
       description:
         "Ovulation may be approaching or happening around this time.",
+      articleSlug: null,
     };
   }
 
@@ -166,6 +170,7 @@ export function getCyclePhase(
       "Likely Luteal Phase",
     description:
       "Your body may be preparing for your next period.",
+    articleSlug: null,
   };
 }
 

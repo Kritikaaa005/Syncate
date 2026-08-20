@@ -21,18 +21,19 @@ export default function Index() {
 
     const timer = setTimeout(async () => {
       // A saved access token means this device already has an account —
-      // route straight past the guest terms/register flow instead of
-      // creating a new account every cold start. This is only checking
-      // "does a token exist", not validating it's unexpired — an expired
-      // access token still refreshes fine via the refresh token, and a
-      // dead refresh token just means whatever screen we land on will
-      // itself hit a 401 and can bounce back to /terms then. That retry
-      // path isn't wired up yet — flagging it here as a known gap rather
-      // than solving it in this file, which only owns launch timing.
+      // route straight to the personalized dashboard instead of back
+      // through the guest/register flow on every cold start. This is
+      // only checking "does a token exist", not validating it's
+      // unexpired — an expired access token still refreshes fine via
+      // the refresh token, and a dead refresh token just means the
+      // dashboard's own data fetch will hit a 401 and can bounce back
+      // to /terms then. That retry path isn't wired up yet — flagging
+      // it here as a known gap rather than solving it in this file,
+      // which only owns launch timing.
       const token = await getAccessToken();
       if (!active) return;
 
-      router.replace(token ? "/guest" : "/terms");
+      router.replace(token ? "/dashboard" : "/terms");
     }, SPLASH_DURATION_MS);
 
     return () => {

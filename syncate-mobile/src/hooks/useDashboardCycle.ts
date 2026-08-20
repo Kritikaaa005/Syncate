@@ -1,3 +1,12 @@
+// LOCATION: syncate-mobile/src/hooks/useDashboardCycle.ts
+// (replaces the existing file)
+//
+// Swapped getLastPeriod() -> getDashboard(), dropped the
+// last_period_status check in createCycleSummary (that field doesn't
+// exist on the response anymore — dashboard_state alone tells you
+// everything you need). Renamed "unknown" -> "awaiting_first_period"
+// to match cycleService.ts.
+
 import {
   useCallback,
   useEffect,
@@ -5,35 +14,31 @@ import {
 } from "react";
 
 import {
-  getLastPeriod,
-  type LastPeriodResponse,
+  getDashboard,
+  type DashboardResponse,
+  type DashboardState,
 } from "@/services/cycleService";
 import {
   parseISODate,
   type CycleSummary,
 } from "@/utils/cycleCalculations";
 
-type DashboardState =
-  | "known"
-  | "unknown";
-
 type DashboardCycleResult = {
   loading: boolean;
   errorMessage: string;
   dashboardState: DashboardState;
   lastPeriod:
-    LastPeriodResponse | null;
+    DashboardResponse | null;
   cycleSummary:
     CycleSummary | null;
   reload: () => Promise<void>;
 };
 
 function createCycleSummary(
-  data: LastPeriodResponse
+  data: DashboardResponse
 ): CycleSummary | null {
   if (
     data.dashboard_state !== "known" ||
-    data.last_period_status !== "known" ||
     !data.phase ||
     data.cycle_day === null ||
     data.cycle_length === null ||
@@ -64,6 +69,8 @@ function createCycleSummary(
         data.phase.display_name,
       description:
         data.phase.description,
+      articleSlug:
+        data.phase.article_slug,
     },
 
     currentCycleStartDate:
@@ -105,7 +112,7 @@ function useDashboardCycle():
     lastPeriod,
     setLastPeriod,
   ] =
-    useState<LastPeriodResponse | null>(
+    useState<DashboardResponse | null>(
       null
     );
 
@@ -122,7 +129,7 @@ function useDashboardCycle():
     setDashboardState,
   ] =
     useState<DashboardState>(
-      "unknown"
+      "awaiting_first_period"
     );
 
   const reload =
@@ -132,47 +139,10 @@ function useDashboardCycle():
 
       try {
         const response =
-          await getLastPeriod();
+          await getDashboard();
 
         setLastPeriod(response);
 
-        console.log(
-  "DASHBOARD RESPONSE:",
-  JSON.stringify(
-    response,
-    null,
-    2
-  )
-);
-
-console.log(
-  "DASHBOARD FIELD CHECK:",
-  {
-    dashboardState:
-      response.dashboard_state,
-    lastPeriodStatus:
-      response.last_period_status,
-    phase: response.phase,
-    cycleDay:
-      response.cycle_day,
-    cycleLength:
-      response.cycle_length,
-    currentCycleStartDate:
-      response
-        .current_cycle_start_date,
-    nextPeriodDate:
-      response.next_period_date,
-    ovulationDate:
-      response
-        .estimated_ovulation_date,
-    daysUntilNextPeriod:
-      response
-        .days_until_next_period,
-    daysUntilOvulation:
-      response
-        .days_until_ovulation,
-  }
-);
         const summary =
           createCycleSummary(
             response
@@ -187,7 +157,7 @@ console.log(
         setLastPeriod(null);
         setCycleSummary(null);
         setDashboardState(
-          "unknown"
+          "awaiting_first_period"
         );
 
         setErrorMessage(

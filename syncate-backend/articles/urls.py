@@ -5,6 +5,7 @@ from .views import (
     AdminArticleViewSet,
     AdminContentTypeViewSet,
     PublicArticleViewSet,
+    PublicContentTypeViewSet,
 )
 
 router = DefaultRouter()
@@ -14,6 +15,12 @@ router.register(
     r"articles",
     PublicArticleViewSet,
     basename="articles",
+)
+
+router.register(
+    r"content-types",
+    PublicContentTypeViewSet,
+    basename="content-types",
 )
 
 # Admin Educational Content

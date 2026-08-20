@@ -3,6 +3,8 @@ Views for existing Syncate user accounts.
 
 This module contains:
 
+- Reading the signed-in user's profile summary
+- Adding an optional recovery email after registration
 - Updating a user's nickname
 - Updating a user's tracking preference
 - Confirming an email-verification link
@@ -11,8 +13,11 @@ This module contains:
 Account creation itself belongs to the registration app.
 """
 
+import logging
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.db import IntegrityError, transaction
 from django.shortcuts import render
 from django.views import View
 
@@ -22,6 +27,7 @@ from rest_framework.permissions import (
     IsAuthenticated,
 )
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import (
     RefreshToken,
@@ -29,12 +35,136 @@ from rest_framework_simplejwt.tokens import (
 
 from .models import UserProfile
 from .serializers import (
+    AddEmailSerializer,
     NicknameSerializer,
     TrackingModeSerializer,
+    UserProfileReadSerializer,
 )
 from .services import (
     consume_email_verification_token,
+    issue_email_verification_token,
+    send_verification_email,
 )
+
+
+logger = logging.getLogger(__name__)
+
+
+class MyProfileView(APIView):
+    """
+    GET /api/users/me/profile/
+
+    Small read-only profile payload for the mobile Profile screen. Keeping
+    this endpoint focused means the client does not need to infer nickname
+    from cycle endpoints or keep registration response data around forever.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = UserProfile.objects.get_or_create(
+            user=request.user,
+        )
+
+        serializer = UserProfileReadSerializer(profile)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class AddEmailView(APIView):
+    """
+    PATCH /api/users/me/email/
+
+    Adds the optional account email after registration and sends the same
+    verification link used by registration. Re-submitting the same
+    unverified email intentionally acts as a resend; a verified email is not
+    changeable here because changing an established recovery identity needs a
+    dedicated security flow later.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "profile-email"
+
+    def patch(self, request):
+        serializer = AddEmailSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"]
+        user = request.user
+        profile, _ = UserProfile.objects.get_or_create(
+            user=user,
+        )
+        current_email = (user.email or "").strip().lower()
+
+        if current_email != email:
+            try:
+                with transaction.atomic():
+                    user.email = email
+                    user.save(update_fields=["email"])
+
+                    profile.is_email_verified = False
+                    profile.save(
+                        update_fields=[
+                            "is_email_verified",
+                            "updated_at",
+                        ]
+                    )
+
+                    token = issue_email_verification_token(
+                        user,
+                        email,
+                    )
+            except IntegrityError:
+                return Response(
+                    {
+                        "email": [
+                            "An account with this email already exists."
+                        ]
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            token = issue_email_verification_token(
+                user,
+                email,
+            )
+
+        # Same existing design as registration: the account/email update is
+        # authoritative even if the configured mail provider has a temporary
+        # failure. The client receives an explicit flag instead of pretending
+        # a verification email definitely went out.
+        verification_sent = True
+        try:
+            send_verification_email(token)
+        except Exception:
+            verification_sent = False
+            logger.exception(
+                "Failed to send profile email verification for user_id=%s",
+                user.id,
+            )
+
+        return Response(
+            {
+                "email": user.email,
+                "is_email_verified": profile.is_email_verified,
+                "email_verification_sent": verification_sent,
+                "message": (
+                    "Verification email sent."
+                    if verification_sent
+                    else (
+                        "Email saved, but the verification email could not be sent right now."
+                    )
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class UpdateNicknameView(APIView):
@@ -42,9 +172,7 @@ class UpdateNicknameView(APIView):
     PATCH /api/users/me/nickname/
     """
 
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request):
         profile, _ = (
@@ -172,6 +300,9 @@ class LoginView(APIView):
     permission_classes = [
         AllowAny,
     ]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
     def post(self, request):
         email = (

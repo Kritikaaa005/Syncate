@@ -22,11 +22,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
-import { saveLastPeriod } from "@/services/cycleService";
+// === CHANGED: saveLastPeriod -> logPeriod. The backend can't store
+// an "unknown" period anymore (no date = nothing to save), so this
+// screen's "I don't know" branch below no longer calls the API at
+// all — it just moves on and lets the dashboard show its natural
+// empty state.
+import { logPeriod } from "@/services/cycleService";
 import { formatDisplayDate } from "@/utils/calendarUtils";
 
-const DASHBOARD_ROUTE =
-  "/dashboard" as Href;
+const CYCLE_PREFERENCES_ROUTE =
+  // === NEW: this used to jump straight to DASHBOARD_ROUTE. Now it
+  // goes to one more onboarding step first — the cycle-length /
+  // period-duration questions. You'll need a route file for this,
+  // matching whatever pattern your app/onboarding/last-period.tsx
+  // already uses (e.g. app/onboarding/cycle-preferences.tsx
+  // rendering <CyclePreferencesScreen />).
+  "/onboarding/cycle-preferences" as Href;
 
 function LastPeriodScreen() {
   const {
@@ -103,18 +114,18 @@ function LastPeriodScreen() {
       setIsSubmitting(true);
 
       try {
+        // === CHANGED: "I don't know" used to POST
+        // {last_period_status: "unknown"} so the backend had
+        // something to store. Now there's genuinely nothing to
+        // store — a period with no date isn't a period. So we just
+        // skip the API call entirely and move on, and the dashboard
+        // will correctly show "awaiting_first_period" on its own
+        // since no PeriodLog exists for this user yet.
         if (doesNotKnow) {
-          await saveLastPeriod({
-            last_period_status:
-              "unknown",
-            last_period_start_date:
-              null,
-          });
+          // no API call — nothing to save
         } else if (selectedDate) {
-          await saveLastPeriod({
-            last_period_status:
-              "known",
-            last_period_start_date:
+          await logPeriod({
+            start_date:
               selectedDate,
           });
         } else {
@@ -123,13 +134,14 @@ function LastPeriodScreen() {
           );
         }
 
-        /*
-         * Navigation happens only after
-         * Django successfully stores the
-         * last-period information.
-         */
+        // === CHANGED: this used to be the terminal step of
+        // onboarding (dismissAll + replace straight to the
+        // dashboard). It isn't anymore — CyclePreferencesScreen is
+        // now the true last step, so the dismissAll-the-whole-stack
+        // logic lives there instead. This is just a normal forward
+        // step now.
         router.replace(
-          DASHBOARD_ROUTE
+          CYCLE_PREFERENCES_ROUTE
         );
       } catch (error) {
         setErrorMessage(

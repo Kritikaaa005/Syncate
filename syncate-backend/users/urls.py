@@ -4,7 +4,7 @@ URL routes owned by the users app.
 This module exposes three separate route groups:
 
 1. `urlpatterns`
-   Included under `/api/users/` for authenticated profile updates.
+   Included under `/api/users/` for authenticated profile operations.
 
 2. `auth_api_urlpatterns`
    Included under `/api/auth/` for login and JWT refresh.
@@ -20,7 +20,9 @@ from rest_framework_simplejwt.views import (
 )
 
 from .views import (
+    AddEmailView,
     LoginView,
+    MyProfileView,
     UpdateNicknameView,
     UpdateTrackingModeView,
     VerifyEmailConfirmView,
@@ -29,6 +31,16 @@ from .views import (
 
 # Included under /api/users/
 urlpatterns = [
+    path(
+        "me/profile/",
+        MyProfileView.as_view(),
+        name="my-profile",
+    ),
+    path(
+        "me/email/",
+        AddEmailView.as_view(),
+        name="add-email",
+    ),
     path(
         "me/nickname/",
         UpdateNicknameView.as_view(),

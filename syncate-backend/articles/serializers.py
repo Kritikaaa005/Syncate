@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import ContentType, EducationalContent
+from .services import phase_conflict_exists
 
 
 class ContentTypeSerializer(serializers.ModelSerializer):
@@ -84,6 +85,7 @@ class EducationalContentSerializer(serializers.ModelSerializer):
             "content_types",
             "content_type_ids",
             "category",
+            "phase",
             "published_date",
             "is_published",
             "created_at",
@@ -101,6 +103,21 @@ class EducationalContentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def validate_phase(self, value):
+        if not value:
+            return value
+
+        exclude_pk = self.instance.pk if self.instance else None
+
+        if phase_conflict_exists(value, exclude_pk=exclude_pk):
+            raise serializers.ValidationError(
+                "Another published article is already assigned to this "
+                "phase. Unpublish it first, or leave this article's "
+                "phase unset."
+            )
+
+        return value
 
     def validate_title(self, value):
         title = value.strip()

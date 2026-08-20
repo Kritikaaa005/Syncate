@@ -11,6 +11,8 @@ export type BackendArticle = {
 
   category: string;
 
+  content_types: { name: string }[];
+
   cover_image_url: string | null;
 
   published_date?: string;

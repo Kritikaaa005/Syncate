@@ -22,7 +22,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
-import { saveLastPeriod } from "@/services/cycleService";
+// === CHANGED: saveLastPeriod -> logPeriod. This screen always has a
+// real selected date by the time handleSave runs (see the `!selectedDate`
+// guard below), so it never needs the "idk" branch LastPeriodScreen.tsx
+// has — it's a straight POST every time.
+import { logPeriod } from "@/services/cycleService";
 import { formatDisplayDate } from "@/utils/calendarUtils";
 
 const DASHBOARD_ROUTE =
@@ -75,10 +79,8 @@ function DashboardCalendarScreen() {
     setIsSubmitting(true);
 
     try {
-      await saveLastPeriod({
-        last_period_status:
-          "known",
-        last_period_start_date:
+      await logPeriod({
+        start_date:
           selectedDate,
       });
 

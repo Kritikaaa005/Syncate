@@ -1,3 +1,7 @@
+import type {
+  EmailUpdateResponse,
+  UserProfileSummary,
+} from "@/types/profile";
 import { authenticatedFetch } from "@/utils/authenticatedFetch";
 
 export type TrackingMode =
@@ -88,9 +92,9 @@ async function getErrorMessage(
   );
 }
 
-async function authenticatedPatch<T>(
+async function authenticatedJson<T>(
   path: string,
-  body: Record<string, unknown>
+  init?: RequestInit
 ): Promise<T> {
   const controller =
     new AbortController();
@@ -105,12 +109,17 @@ async function authenticatedPatch<T>(
       await authenticatedFetch(
         path,
         {
-          method: "PATCH",
+          ...init,
           headers: {
-            "Content-Type":
-              "application/json",
+            Accept: "application/json",
+            ...(init?.body
+              ? {
+                  "Content-Type":
+                    "application/json",
+                }
+              : {}),
+            ...init?.headers,
           },
-          body: JSON.stringify(body),
           signal: controller.signal,
         }
       );
@@ -141,6 +150,36 @@ async function authenticatedPatch<T>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function authenticatedPatch<T>(
+  path: string,
+  body: Record<string, unknown>
+): Promise<T> {
+  return authenticatedJson<T>(
+    path,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }
+  );
+}
+
+export function getMyProfile(): Promise<UserProfileSummary> {
+  return authenticatedJson<UserProfileSummary>(
+    "/users/me/profile/"
+  );
+}
+
+export function addOrResendEmail(
+  email: string
+): Promise<EmailUpdateResponse> {
+  return authenticatedPatch<EmailUpdateResponse>(
+    "/users/me/email/",
+    {
+      email,
+    }
+  );
 }
 
 export function updateNickname(

@@ -16,6 +16,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Ovulation happens around the middle of the cycle, when an egg is released.",
       "The luteal phase happens after ovulation and may bring mood, appetite, or energy changes.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -32,6 +33,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Some people notice discharge changes, mild cramps, or higher energy.",
       "Cycle tracking can help estimate ovulation, but predictions are not always exact.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -48,6 +50,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Use heat, rest, and gentle movement for cramps.",
       "Drink water and eat balanced meals during your period.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -64,6 +67,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Protein and fiber can support energy and mood.",
       "Limiting too much caffeine or sugar may help some people with PMS symptoms.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -80,6 +84,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Rest is also productive when your body feels overwhelmed.",
       "If mood changes feel severe, talking to a professional can help.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -96,6 +101,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "Warm drinks can feel soothing during cramps.",
       "Your needs may increase during hot weather or exercise.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -112,6 +118,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "A calming night routine may help your body relax.",
       "Try reducing screens, caffeine, and heavy meals close to bedtime.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
   {
@@ -128,6 +135,7 @@ export const FALLBACK_ARTICLES: BackendArticle[] = [
       "You may notice symptoms that repeat each cycle.",
       "Tracking can also help when speaking with a healthcare provider.",
     ].join("\n\n"),
+    content_types: [],
     cover_image_url: null,
   },
 ];

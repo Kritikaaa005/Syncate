@@ -31,6 +31,12 @@ class ContentType(models.Model):
 
 
 class EducationalContent(models.Model):
+    class Phase(models.TextChoices):
+        MENSTRUAL = "menstrual", "Menstrual"
+        FOLLICULAR = "follicular", "Follicular"
+        OVULATION = "ovulation", "Ovulation"
+        LUTEAL = "luteal", "Luteal"
+
     content_id = models.BigAutoField(primary_key=True)
 
     title = models.CharField(max_length=200)
@@ -71,6 +77,18 @@ class EducationalContent(models.Model):
         related_name="educational_contents",
     )
 
+    # Set only on the one article per phase that the dashboard's
+    # "Read about this phase" button should open. Unrelated to
+    # content_types/ContentType, which is a separate open-ended
+    # topic taxonomy (PMDD, Nutrition, etc.) and isn't meant to
+    # represent menstrual phases.
+    phase = models.CharField(
+        max_length=20,
+        choices=Phase.choices,
+        null=True,
+        blank=True,
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -78,6 +96,13 @@ class EducationalContent(models.Model):
         ordering = [ "-published_date", "-created_at"]
         verbose_name = "Educational Content"
         verbose_name_plural = "Educational Content"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["phase"],
+                condition=models.Q(is_published=True, is_deleted=False),
+                name="one_published_article_per_phase",
+            )
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:

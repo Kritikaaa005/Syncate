@@ -40,6 +40,30 @@ export function formatLongDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
+// Compact form for chips/summaries where a full "August 6, 2026" is too
+// wide, e.g. inside the sticky calendar edit bar.
+export function formatShortDate(value: string): string {
+  if (!value) return "";
+  return parseDateValue(value).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+// Every date string from `start` to `end` inclusive, ascending. Used to
+// seed a multi-day selection from a period log's stored start/end so
+// the whole thing can be edited (grown or shrunk), not just its start.
+export function enumerateDateRange(start: string, end: string): string[] {
+  const startDate = parseDateValue(start);
+  const endDate = parseDateValue(end);
+  const dates: string[] = [];
+
+  let cursor = startDate;
+  while (cursor.getTime() <= endDate.getTime()) {
+    dates.push(toDateValue(cursor));
+    cursor = addDays(cursor, 1);
+  }
+
+  return dates;
+}
+
 export function getCalendarCells(viewDate: Date): CalendarCell[] {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();

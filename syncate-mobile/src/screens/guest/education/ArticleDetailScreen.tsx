@@ -16,6 +16,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { guestTheme } from "@/constants/guestTheme";
@@ -80,10 +81,22 @@ export default function ArticleDetail() {
     );
   }
 
-  const paragraphs = article.content
-    .split(/\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean);
+  const markdownStyles = {
+    body: {
+      color: t.text,
+      fontSize: 14,
+      lineHeight: 26,
+    },
+    heading1: { color: t.text, fontSize: 21, fontWeight: "700" as const },
+    heading2: { color: t.text, fontSize: 18, fontWeight: "700" as const },
+    heading3: { color: t.text, fontSize: 16, fontWeight: "600" as const },
+    strong: { fontWeight: "700" as const },
+    bullet_list: { marginBottom: 8 },
+    ordered_list: { marginBottom: 8 },
+    list_item: { marginBottom: 6 },
+    link: { color: t.primary },
+    paragraph: { marginTop: 0, marginBottom: 16 },
+  };
 
   return (
     <SafeAreaView
@@ -184,16 +197,9 @@ export default function ArticleDetail() {
               {article.short_description}
             </Text>
 
-            <View style={styles.paragraphs}>
-              {paragraphs.map((paragraph, index) => (
-                <Text
-                  key={`${article.slug}-${index}`}
-                  style={[styles.paragraph, { color: t.text }]}
-                >
-                  {paragraph}
-                </Text>
-              ))}
-            </View>
+            <Markdown style={markdownStyles}>
+              {article.content}
+            </Markdown>
           </View>
         </View>
       </ScrollView>
@@ -356,12 +362,4 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
 
-  paragraphs: {
-    gap: 16,
-  },
-
-  paragraph: {
-    fontSize: 14,
-    lineHeight: 28,
-  },
 });

@@ -12,6 +12,7 @@ CYCLE_PHASE_ARTICLES = [
     {
         "title": "Understanding the Menstrual Phase",
         "slug": "understanding-the-menstrual-phase",
+        "phase": "menstrual",
         "short_description": (
             "Learn what happens during your period and why your cycle begins "
             "with the menstrual phase."
@@ -31,6 +32,7 @@ Syncate estimates your phase from the period dates you record. It cannot confirm
     {
         "title": "Understanding the Follicular Phase",
         "slug": "understanding-the-follicular-phase",
+        "phase": "follicular",
         "short_description": (
             "Understand how your body prepares an egg and rebuilds the "
             "uterine lining before ovulation."
@@ -50,6 +52,7 @@ The length of the follicular phase can vary between people and between cycles. S
     {
         "title": "Understanding Ovulation",
         "slug": "understanding-ovulation",
+        "phase": "ovulation",
         "short_description": (
             "Learn what ovulation means, when it may happen, and why its "
             "timing can vary."
@@ -69,6 +72,7 @@ Syncate provides an estimated ovulation date using the cycle information you rec
     {
         "title": "Understanding the Luteal Phase",
         "slug": "understanding-the-luteal-phase",
+        "phase": "luteal",
         "short_description": (
             "Learn what happens after ovulation while your body prepares for "
             "either pregnancy or the next period."
@@ -130,6 +134,7 @@ class Command(BaseCommand):
                         ],
                         "content": article_data["content"],
                         "author": "Syncate Team",
+                        "phase": article_data["phase"],
                         "is_published": True,
                         "is_deleted": False,
                     },
