@@ -291,10 +291,32 @@ export async function logPeriod(
   );
 }
 
-// === NEW: saves the cycle-length / period-duration onboarding
-// answers. Called once, from CyclePreferencesScreen.tsx, right after
-// LastPeriodScreen — this is the last step of period-tracking
-// onboarding.
+// === NEW: reads back the cycle-length / period-duration answers.
+// Same shape onboarding writes with updateCyclePreferences — used by
+// ProfilePeriodDetailsScreen.tsx (Settings > Change period details)
+// to show what's currently saved before letting it be edited.
+export async function getCycleProfile():
+  Promise<CycleProfileResponse> {
+  const response =
+    await authenticatedFetch(
+      PROFILE_ENDPOINT,
+      {
+        method: "GET",
+      }
+    );
+
+  return readResponse<CycleProfileResponse>(
+    response,
+    "Could not load your cycle information."
+  );
+}
+
+// === NEW: saves the cycle-length / period-duration answers. Used by
+// CyclePreferencesScreen.tsx (the last step of onboarding) and, later,
+// ProfilePeriodDetailsScreen.tsx (Settings > Change period details) —
+// same payload shape either way, since "update the assumption" means
+// the same thing whether it's being set for the first time or edited
+// afterward.
 export async function updateCyclePreferences(
   payload: CyclePreferencesPayload
 ): Promise<CycleProfileResponse> {

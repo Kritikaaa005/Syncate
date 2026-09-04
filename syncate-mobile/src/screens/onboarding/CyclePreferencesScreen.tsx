@@ -16,7 +16,6 @@ import {
 } from "expo-router";
 import {
   Calendar,
-  Check,
   Droplet,
   Moon,
   Sun,
@@ -32,6 +31,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import CycleQuestionSection, {
+  CYCLE_LENGTH_OPTIONS,
+  PERIOD_LENGTH_OPTIONS,
+} from "@/components/onboarding/CycleQuestionSection";
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
@@ -41,53 +44,6 @@ import {
 
 const DASHBOARD_ROUTE =
   "/dashboard" as Href;
-
-type BucketOption = {
-  id: string;
-  label: string;
-  days: number;
-};
-
-// Representative day-count per bucket. These are only used when the
-// person actually picks a bucket (confidence: "estimated") — the idk
-// path never sends a number at all.
-const CYCLE_LENGTH_OPTIONS: BucketOption[] =
-  [
-    {
-      id: "short",
-      label: "21–24 days",
-      days: 23,
-    },
-    {
-      id: "average",
-      label: "25–30 days",
-      days: 28,
-    },
-    {
-      id: "long",
-      label: "31–35 days",
-      days: 33,
-    },
-  ];
-
-const PERIOD_LENGTH_OPTIONS: BucketOption[] =
-  [
-    {
-      id: "short",
-      label: "3–4 days",
-      days: 4,
-    },
-    {
-      id: "average",
-      label: "5–6 days",
-      days: 5,
-    },
-    {
-      id: "long",
-      label: "7+ days",
-      days: 7,
-    },
-  ];
 
 function CyclePreferencesScreen() {
   const {
@@ -377,7 +333,7 @@ function CyclePreferencesScreen() {
             </Text>
           </View>
 
-          <QuestionSection
+          <CycleQuestionSection
             icon={
               <Calendar
                 size={16}
@@ -409,7 +365,7 @@ function CyclePreferencesScreen() {
             theme={theme}
           />
 
-          <QuestionSection
+          <CycleQuestionSection
             icon={
               <Droplet
                 size={16}
@@ -528,186 +484,6 @@ function CyclePreferencesScreen() {
   );
 }
 
-// Small local component — one question block (title + 3 bucket pills
-// + an idk pill). Both questions on this screen use it, so the
-// picking-a-bucket-vs-idk logic only lives in one place.
-type QuestionSectionProps = {
-  icon: React.ReactNode;
-  title: string;
-  options: BucketOption[];
-  selectedId: string | null;
-  isUnknown: boolean;
-  onSelect: (id: string) => void;
-  onToggleUnknown: () => void;
-  isSubmitting: boolean;
-  theme: (typeof guestTheme.mode)["light"];
-};
-
-function QuestionSection({
-  icon,
-  title,
-  options,
-  selectedId,
-  isUnknown,
-  onSelect,
-  onToggleUnknown,
-  isSubmitting,
-  theme,
-}: QuestionSectionProps) {
-  return (
-    <View
-      style={
-        styles.questionSection
-      }
-    >
-      <View
-        style={
-          styles.questionHeader
-        }
-      >
-        {icon}
-
-        <Text
-          style={[
-            styles.questionTitle,
-            {
-              color: theme.text,
-            },
-          ]}
-        >
-          {title}
-        </Text>
-      </View>
-
-      <View
-        style={
-          styles.optionsRow
-        }
-      >
-        {options.map((option) => {
-          const isSelected =
-            !isUnknown
-            && selectedId
-              === option.id;
-
-          return (
-            <Pressable
-              key={option.id}
-              onPress={() =>
-                onSelect(option.id)
-              }
-              disabled={
-                isSubmitting
-              }
-              accessibilityRole={
-                "button"
-              }
-              accessibilityState={{
-                selected:
-                  isSelected,
-              }}
-              style={({
-                pressed,
-              }) => [
-                styles.optionPill,
-                {
-                  backgroundColor:
-                    isSelected
-                      ? theme
-                          .primarySoft
-                      : theme.card,
-                  borderColor:
-                    isSelected
-                      ? theme.primary
-                      : theme.border,
-                },
-                pressed
-                  && !isSubmitting
-                  && styles
-                    .optionPillPressed,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.optionText,
-                  {
-                    color: isSelected
-                      ? theme.primary
-                      : theme.text,
-                  },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Pressable
-        onPress={onToggleUnknown}
-        disabled={isSubmitting}
-        accessibilityRole="button"
-        accessibilityState={{
-          selected: isUnknown,
-        }}
-        style={({ pressed }) => [
-          styles.unknownOption,
-          {
-            backgroundColor:
-              isUnknown
-                ? theme.primarySoft
-                : theme.card,
-            borderColor: isUnknown
-              ? theme.primary
-              : theme.border,
-          },
-          pressed
-            && !isSubmitting
-            && styles
-              .unknownOptionPressed,
-        ]}
-      >
-        <View
-          style={[
-            styles.checkbox,
-            {
-              backgroundColor:
-                isUnknown
-                  ? theme.primary
-                  : "transparent",
-              borderColor: isUnknown
-                ? theme.primary
-                : theme.inputBorder,
-            },
-          ]}
-        >
-          {isUnknown ? (
-            <Check
-              size={12}
-              strokeWidth={3}
-              color="#FFFFFF"
-            />
-          ) : null}
-        </View>
-
-        <Text
-          style={[
-            styles.unknownText,
-            {
-              color: isUnknown
-                ? theme.primary
-                : theme.text,
-            },
-          ]}
-        >
-          I don&apos;t know
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
 const styles =
   StyleSheet.create({
     safeArea: {
@@ -778,89 +554,6 @@ const styles =
       textAlign: "center",
       fontSize: 14,
       lineHeight: 21,
-    },
-
-    questionSection: {
-      marginBottom: 26,
-    },
-
-    questionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      marginBottom: 12,
-    },
-
-    questionTitle: {
-      flexShrink: 1,
-      fontSize: 15,
-      lineHeight: 21,
-      fontWeight: "600",
-    },
-
-    optionsRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-      marginBottom: 10,
-    },
-
-    optionPill: {
-      minHeight: 42,
-      paddingHorizontal: 16,
-      borderWidth: 1.5,
-      borderRadius: 999,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    optionPillPressed: {
-      opacity: 0.78,
-      transform: [
-        {
-          scale: 0.98,
-        },
-      ],
-    },
-
-    optionText: {
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "600",
-    },
-
-    unknownOption: {
-      minHeight: 44,
-      paddingHorizontal: 16,
-      borderWidth: 1.5,
-      borderRadius: 22,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-
-    unknownOptionPressed: {
-      opacity: 0.78,
-      transform: [
-        {
-          scale: 0.985,
-        },
-      ],
-    },
-
-    checkbox: {
-      width: 20,
-      height: 20,
-      marginRight: 9,
-      borderWidth: 1.5,
-      borderRadius: 10,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    unknownText: {
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: "600",
     },
 
     bottomSection: {

@@ -83,6 +83,8 @@ export default function useUserProfile() {
           email: result.email,
           is_email_verified:
             result.is_email_verified,
+          has_password:
+            current?.has_password ?? false,
         }));
 
         return result;

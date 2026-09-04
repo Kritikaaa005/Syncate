@@ -1,5 +1,6 @@
 import type {
   EmailUpdateResponse,
+  SetPasswordResponse,
   UserProfileSummary,
 } from "@/types/profile";
 import { authenticatedFetch } from "@/utils/authenticatedFetch";
@@ -204,6 +205,30 @@ export function updateTrackingMode(
     "/users/me/tracking-mode/",
     {
       tracking_mode: trackingMode,
+    }
+  );
+}
+
+// === NEW: for ProfilePasswordScreen. `currentPassword` is only
+// meaningful (and only sent) when the account already has a usable
+// password — see SetPasswordSerializer on the backend for why it's
+// the server, not this function's caller, that ultimately decides
+// whether it's required.
+export type SetPasswordPayload = {
+  currentPassword?: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+export function setAccountPassword(
+  payload: SetPasswordPayload
+): Promise<SetPasswordResponse> {
+  return authenticatedPatch<SetPasswordResponse>(
+    "/users/me/password/",
+    {
+      current_password: payload.currentPassword ?? "",
+      new_password: payload.newPassword,
+      confirm_password: payload.confirmPassword,
     }
   );
 }

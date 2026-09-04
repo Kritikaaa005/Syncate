@@ -31,13 +31,21 @@ type CalendarEditBarProps = {
 
   // Currently staged (unsaved) selection for this edit session.
   pendingCount: number;
-  rangeStart: string | null;
-  rangeEnd: string | null;
-  // Days inside [rangeStart, rangeEnd] that weren't individually
-  // tapped but will be saved as period days anyway, since one period
-  // log can only be a single continuous range.
-  gapCount: number;
+  // The range that will ACTUALLY be saved — already widened to cover
+  // an existing period being extended, if any. Always shown to the
+  // person before they hit Save, never discovered after.
+  previewStart: string | null;
+  previewEnd: string | null;
+  // Days inside [previewStart, previewEnd] that weren't individually
+  // tapped but will be saved as period days anyway — either because
+  // tapped days had a gap, or because merging with an existing period
+  // pulled in extra days.
+  impliedCount: number;
   isEditingExisting: boolean;
+  // Tapped days touch two or more different saved periods at once —
+  // can't be resolved automatically, Save is disabled until the
+  // selection is narrowed down.
+  hasConflict: boolean;
 
   isSubmitting: boolean;
   errorMessage: string;
@@ -53,22 +61,23 @@ function CalendarEditBar({
   isEditMode,
   onToggleEditMode,
   pendingCount,
-  rangeStart,
-  rangeEnd,
-  gapCount,
+  previewStart,
+  previewEnd,
+  impliedCount,
   isEditingExisting,
+  hasConflict,
   isSubmitting,
   errorMessage,
   savedRangeLabel,
   onSave,
   onClearSelection,
 }: CalendarEditBarProps) {
-  const hasSelection = pendingCount > 0 && rangeStart !== null;
+  const hasSelection = pendingCount > 0 && previewStart !== null;
 
-  const rangeLabel = rangeStart && rangeEnd
-    ? rangeStart === rangeEnd
-      ? formatShortDate(rangeStart)
-      : `${formatShortDate(rangeStart)} – ${formatShortDate(rangeEnd)}`
+  const rangeLabel = previewStart && previewEnd
+    ? previewStart === previewEnd
+      ? formatShortDate(previewStart)
+      : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
     : "";
 
   return (
@@ -116,26 +125,39 @@ function CalendarEditBar({
                 styles.selectionCard,
                 {
                   backgroundColor: theme.primarySoft,
-                  borderColor: theme.border,
+                  borderColor: hasConflict
+                    ? theme.primary
+                    : theme.border,
                 },
               ]}
             >
               <View style={styles.selectionTextArea}>
                 <Text
-                  style={[styles.eyebrow, { color: theme.muted }]}
+                  style={[
+                    styles.eyebrow,
+                    { color: hasConflict ? theme.primary : theme.muted },
+                  ]}
                 >
-                  {isEditingExisting
-                    ? "UPDATING PERIOD"
-                    : "NEW PERIOD"}
+                  {hasConflict
+                    ? "CAN'T SAVE YET"
+                    : isEditingExisting
+                      ? "UPDATING PERIOD"
+                      : "NEW PERIOD"}
                 </Text>
 
                 <Text style={[styles.rangeText, { color: theme.text }]}>
                   {rangeLabel}
                 </Text>
 
-                {gapCount > 0 ? (
+                {hasConflict ? (
+                  <Text style={[styles.gapNote, { color: theme.primary }]}>
+                    These days overlap more than one existing period.
+                    Untap some days, or save this as a smaller range
+                    first.
+                  </Text>
+                ) : impliedCount > 0 ? (
                   <Text style={[styles.gapNote, { color: theme.muted }]}>
-                    {`+${gapCount} day${gapCount === 1 ? "" : "s"} in between will be included too`}
+                    {`+${impliedCount} day${impliedCount === 1 ? "" : "s"} shown with a dotted outline will be included too`}
                   </Text>
                 ) : null}
               </View>
@@ -173,7 +195,7 @@ function CalendarEditBar({
           )}
 
           <View style={styles.actionRow}>
-            {hasSelection ? (
+            {hasSelection && !hasConflict ? (
               <Pressable
                 onPress={onSave}
                 disabled={isSubmitting}
@@ -212,7 +234,7 @@ function CalendarEditBar({
                   backgroundColor: theme.card,
                   borderColor: theme.border,
                 },
-                !hasSelection && styles.doneButtonWide,
+                (!hasSelection || hasConflict) && styles.doneButtonWide,
                 pressed && !isSubmitting && styles.pressed,
               ]}
             >

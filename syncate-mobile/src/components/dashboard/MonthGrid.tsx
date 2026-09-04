@@ -44,6 +44,12 @@ type MonthGridProps = {
   // A Set, not a single date — the whole point of the rewrite is that
   // more than one day can be marked as a period day before saving.
   selectedDates: ReadonlySet<string>;
+  // Days that will ALSO be saved as period days because of how the
+  // save will merge with an existing period or fill a gap between
+  // tapped dates — but that the user did not personally tap. Shown
+  // with a lighter, undashed preview so it's visibly different from
+  // "you tapped this" and is never a silent surprise after Save.
+  impliedDates: ReadonlySet<string>;
   onSelectDate: (value: string) => void;
   editingEnabled: boolean;
   disabled?: boolean;
@@ -88,6 +94,7 @@ function MonthGrid({
   theme,
   phaseTheme,
   selectedDates,
+  impliedDates,
   onSelectDate,
   editingEnabled,
   disabled = false,
@@ -168,6 +175,9 @@ function MonthGrid({
             const isSelected =
               cell.inMonth && selectedDates.has(dateKey);
 
+            const isImplied =
+              cell.inMonth && !isSelected && impliedDates.has(dateKey);
+
             const isToday =
               cell.inMonth
               && isSameDay(normalizedDate, today);
@@ -215,14 +225,15 @@ function MonthGrid({
                         // as the menstrual color, regardless of what
                         // phase the day currently shows — this is the
                         // "tap it and it turns period color" behavior.
-                        cell.inMonth && isSelected
+                        cell.inMonth && (isSelected || isImplied)
                           ? menstrualTheme.soft
                           : cell.inMonth && phaseEntry
                             ? phaseEntry.soft
                             : "transparent",
                     },
                     isToday
-                    && !isSelected && {
+                    && !isSelected
+                    && !isImplied && {
                       borderWidth: 1.5,
                       borderColor: theme.primary,
                     },
@@ -233,6 +244,16 @@ function MonthGrid({
                       shadowColor: theme.shadow,
                     },
                     isSelected && styles.selectedDayButton,
+                    // Implied days get a lighter, dotted outline —
+                    // deliberately less confident-looking than a
+                    // direct tap, so it reads as "this will also be
+                    // included" rather than "you selected this".
+                    isImplied && {
+                      borderWidth: 1.5,
+                      borderStyle: "dotted",
+                      borderColor: menstrualTheme.color,
+                      opacity: 0.7,
+                    },
                     pressed
                     && !isDateDisabled
                     && !isSelected && {
@@ -247,7 +268,7 @@ function MonthGrid({
                       {
                         color: !cell.inMonth
                           ? theme.muted
-                          : isSelected
+                          : isSelected || isImplied
                             ? menstrualTheme.color
                             : phaseEntry
                               ? phaseEntry.color
@@ -267,7 +288,7 @@ function MonthGrid({
                     {cell.date.getDate()}
                   </Text>
 
-                  {dayInfo?.source === "logged" && cell.inMonth && !isSelected ? (
+                  {dayInfo?.source === "logged" && cell.inMonth && !isSelected && !isImplied ? (
                     <View
                       style={[
                         styles.loggedDot,

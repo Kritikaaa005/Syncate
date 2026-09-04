@@ -1,24 +1,14 @@
-# LOCATION: syncate-backend/cycle_tracking/services.py
-# (replaces the existing file)
-#
-# One thing changed on top of the PeriodLog stuff: build_dashboard_for_user()
-# is new, and it's where "figure out the whole dashboard payload for this
-# user" now lives. Previously that logic was sitting inside
-# LastPeriodSerializer.to_representation(), which isn't really a
-# serializer's job — a serializer should shape data, not go fetch related
-# models and run business logic. Moving it here keeps that responsibility
-# where it belongs (services.py = "figure stuff out", serializers.py =
-# "shape it for the API", views.py = "wire up the request/response").
-
 from datetime import date, timedelta
 from typing import TypedDict
 
 from articles.services import get_primary_article_slug_for_phase
+from django.utils import timezone
 
 from .models import CycleProfile, PeriodLog
 
 
 DEFAULT_CYCLE_LENGTH = 28
+DEFAULT_PERIOD_LENGTH = 5
 ESTIMATED_OVULATION_DAY = 14
 
 
@@ -41,7 +31,10 @@ class CycleDashboardData(TypedDict):
     prediction_basis: str
 
 
-def get_cycle_phase(cycle_day: int) -> PhaseDetails:
+def get_cycle_phase(
+    cycle_day: int,
+    period_length: int = DEFAULT_PERIOD_LENGTH,
+) -> PhaseDetails:
     """
     Return an estimated cycle phase.
 
@@ -49,7 +42,10 @@ def get_cycle_phase(cycle_day: int) -> PhaseDetails:
     medically exact predictions. (unchanged from before)
     """
 
-    if cycle_day <= 5:
+    if period_length < 1 or period_length > 10:
+        raise ValueError("Period length must be between 1 and 10 days.")
+
+    if cycle_day <= period_length:
         return {
             "key": "menstrual",
             "name": "Menstrual Phase",
@@ -86,6 +82,7 @@ def get_cycle_phase(cycle_day: int) -> PhaseDetails:
 def calculate_cycle_dashboard(
     last_period_start_date: date,
     cycle_length: int = DEFAULT_CYCLE_LENGTH,
+    period_length: int = DEFAULT_PERIOD_LENGTH,
     today: date | None = None,
 ) -> CycleDashboardData:
     """
@@ -95,7 +92,7 @@ def calculate_cycle_dashboard(
     decision happens one level up, in build_dashboard_for_user().
     """
 
-    current_date = today or date.today()
+    current_date = today or timezone.localdate()
 
     if last_period_start_date > current_date:
         raise ValueError("Last period start date cannot be in the future.")
@@ -124,7 +121,7 @@ def calculate_cycle_dashboard(
     return {
         "cycle_day": cycle_day,
         "cycle_length": cycle_length,
-        "phase": get_cycle_phase(cycle_day),
+        "phase": get_cycle_phase(cycle_day, period_length),
         "current_cycle_start_date": current_cycle_start_date,
         "next_period_date": next_period_date,
         "estimated_ovulation_date": estimated_ovulation_date,
@@ -179,6 +176,7 @@ def build_dashboard_for_user(user) -> dict:
     dashboard = calculate_cycle_dashboard(
         last_period_start_date=latest_log.start_date,
         cycle_length=cycle_profile.cycle_length_days,
+        period_length=cycle_profile.period_length_days,
     )
 
     # phase -> "read more about this" link, same as before, just moved
@@ -204,8 +202,8 @@ def build_dashboard_for_user(user) -> dict:
 # separate from calculate_cycle_dashboard() above on purpose — that
 # function answers "where am I RIGHT NOW", this answers "what's the
 # phase for EVERY day in a given year". Different question, but both
-# lean on get_cycle_phase() so the actual phase boundaries (day <=5 is
-# menstrual, etc.) only exist in ONE place in the whole codebase.
+# lean on get_cycle_phase() so the estimated phase boundaries only exist
+# in ONE place in the whole codebase.
 
 class CalendarDay(TypedDict):
     date: str
@@ -218,6 +216,7 @@ def _build_day_entry(
     day: date,
     governing_log: PeriodLog | None,
     cycle_length: int,
+    period_length: int,
     today: date,
 ) -> CalendarDay:
     """
@@ -261,7 +260,7 @@ def _build_day_entry(
     # calculate_cycle_dashboard uses for "today".
     elapsed_days = (day - governing_log.start_date).days
     cycle_day = (elapsed_days % cycle_length) + 1
-    phase = get_cycle_phase(cycle_day)
+    phase = get_cycle_phase(cycle_day, period_length)
 
     return {
         "date": day.isoformat(),
@@ -276,12 +275,13 @@ def build_calendar_for_user(user, year: int) -> dict:
     Every day of `year`, labeled with a phase. Real logged periods
     (PeriodLog rows) always win where they exist; gaps between them —
     and days after the latest one — get an estimated phase tiled by
-    the user's cycle_length_days. Days before the person's first-ever
-    logged period are left blank, not guessed.
+    the user's cycle_length_days and usual period_length_days. Days
+    before the person's first-ever logged period are left blank.
     """
 
     cycle_profile, _ = CycleProfile.objects.get_or_create(user=user)
     cycle_length = cycle_profile.cycle_length_days
+    period_length = cycle_profile.period_length_days
 
     logs = list(
         PeriodLog.objects.filter(user=user).order_by("start_date")
@@ -294,7 +294,7 @@ def build_calendar_for_user(user, year: int) -> dict:
             "days": [],
         }
 
-    today = date.today()
+    today = timezone.localdate()
     current = date(year, 1, 1)
     end_of_year = date(year, 12, 31)
 
@@ -316,7 +316,7 @@ def build_calendar_for_user(user, year: int) -> dict:
 
         days.append(
             _build_day_entry(
-                current, governing_log, cycle_length, today
+                current, governing_log, cycle_length, period_length, today
             )
         )
         current += timedelta(days=1)

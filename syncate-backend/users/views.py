@@ -37,6 +37,7 @@ from .models import UserProfile
 from .serializers import (
     AddEmailSerializer,
     NicknameSerializer,
+    SetPasswordSerializer,
     TrackingModeSerializer,
     UserProfileReadSerializer,
 )
@@ -161,6 +162,58 @@ class AddEmailView(APIView):
                     else (
                         "Email saved, but the verification email could not be sent right now."
                     )
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class SetPasswordView(APIView):
+    """
+    PATCH /api/users/me/password/
+
+    Adds a password to a passwordless account, or changes an existing
+    one — same endpoint, same request shape either way:
+    { "current_password"?: "...", "new_password": "...", "confirm_password": "..." }
+
+    Whether current_password is actually required is decided entirely
+    by SetPasswordSerializer from the account's real password state
+    (see its docstring) — never by whatever the client happens to send.
+
+    NOTE for whoever picks up the security audit (roadmap item #3):
+    this intentionally does NOT blacklist the user's other outstanding
+    refresh tokens after a change. That's a real "sign out everywhere"
+    security property worth having, just not implemented yet — doing
+    it half-right here (e.g. guessing which token is "this device's")
+    would be worse than flagging it and doing it properly once the
+    login/session-recovery flow (roadmap item #25) exists to handle a
+    device gracefully discovering it's been signed out.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password-change"
+
+    def patch(self, request):
+        had_password_before = request.user.has_usable_password()
+
+        serializer = SetPasswordSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(
+            serializer.validated_data["new_password"]
+        )
+        request.user.save(update_fields=["password"])
+
+        return Response(
+            {
+                "message": (
+                    "Password added to your account."
+                    if not had_password_before
+                    else "Password changed successfully."
                 ),
             },
             status=status.HTTP_200_OK,

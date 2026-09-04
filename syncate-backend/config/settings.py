@@ -152,6 +152,10 @@ REST_FRAMEWORK = {
         "register": "10/hour",
         "email-verification-resend": "5/hour",
         "profile-email": "5/hour",
+        # === NEW: password add/change — same reasoning as login/register,
+        # an endpoint that checks a secret (current_password) needs its
+        # own brute-force limit independent of general API traffic.
+        "password-change": "5/hour",
         # === NEW: LoginView had no rate limit at all before — someone
         # could brute-force a password with unlimited attempts. 10/hour
         # matches registration's rate; tighten later if it turns out to

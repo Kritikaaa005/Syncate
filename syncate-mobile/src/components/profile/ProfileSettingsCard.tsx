@@ -10,7 +10,9 @@ import {
   Trash2,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
+import { router, type Href } from "expo-router";
 import {
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -18,14 +20,19 @@ import {
 
 import type { GuestThemeColors } from "@/constants/guestTheme";
 
-type PlaceholderItem = {
+type SettingsItem = {
   title: string;
   subtitle: string;
   icon: LucideIcon;
   destructive?: boolean;
+  // Present => the row is a real, tappable navigation target and
+  // shows a chevron instead of "Soon". Absent => still a placeholder,
+  // matching how every row here behaved before password/period-details
+  // were built.
+  href?: Href;
 };
 
-const ITEMS: PlaceholderItem[] = [
+const ITEMS: SettingsItem[] = [
   {
     title: "My goal",
     subtitle: "Change your tracking goal",
@@ -50,11 +57,13 @@ const ITEMS: PlaceholderItem[] = [
     title: "Change password",
     subtitle: "Add or change your account password",
     icon: KeyRound,
+    href: "/dashboard/profile/password" as Href,
   },
   {
     title: "Change period details",
     subtitle: "Update your cycle and period information",
     icon: CalendarClock,
+    href: "/dashboard/profile/period-details" as Href,
   },
   {
     title: "Delete account",
@@ -112,6 +121,7 @@ function ProfileSettingsCard({
         const itemColor = item.destructive
           ? theme.primary
           : theme.text;
+        const isNavigable = Boolean(item.href);
 
         return (
           <View key={item.title}>
@@ -127,9 +137,23 @@ function ProfileSettingsCard({
               />
             ) : null}
 
-            <View
-              style={styles.itemRow}
-              accessibilityLabel={`${item.title}. Coming soon.`}
+            <Pressable
+              onPress={
+                item.href
+                  ? () => router.push(item.href as Href)
+                  : undefined
+              }
+              disabled={!isNavigable}
+              accessibilityRole={isNavigable ? "button" : undefined}
+              accessibilityLabel={
+                isNavigable
+                  ? item.title
+                  : `${item.title}. Coming soon.`
+              }
+              style={({ pressed }) => [
+                styles.itemRow,
+                pressed && isNavigable && styles.itemRowPressed,
+              ]}
             >
               <View
                 style={[
@@ -165,31 +189,33 @@ function ProfileSettingsCard({
                 </Text>
               </View>
 
-              <View
-                style={[
-                  styles.soonBadge,
-                  {
-                    backgroundColor:
-                      theme.primarySoft,
-                  },
-                ]}
-              >
-                <Text
+              {!isNavigable ? (
+                <View
                   style={[
-                    styles.soonText,
-                    { color: theme.primary },
+                    styles.soonBadge,
+                    {
+                      backgroundColor:
+                        theme.primarySoft,
+                    },
                   ]}
                 >
-                  Soon
-                </Text>
-              </View>
+                  <Text
+                    style={[
+                      styles.soonText,
+                      { color: theme.primary },
+                    ]}
+                  >
+                    Soon
+                  </Text>
+                </View>
+              ) : null}
 
               <ChevronRight
                 size={17}
                 color={theme.muted}
-                opacity={0.45}
+                opacity={isNavigable ? 0.75 : 0.45}
               />
-            </View>
+            </Pressable>
           </View>
         );
       })}
@@ -241,6 +267,10 @@ const styles = StyleSheet.create({
     minHeight: 68,
     flexDirection: "row",
     alignItems: "center",
+  },
+
+  itemRowPressed: {
+    opacity: 0.7,
   },
 
   itemIcon: {

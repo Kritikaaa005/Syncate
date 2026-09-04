@@ -23,6 +23,7 @@ from .views import (
     AddEmailView,
     LoginView,
     MyProfileView,
+    SetPasswordView,
     UpdateNicknameView,
     UpdateTrackingModeView,
     VerifyEmailConfirmView,
@@ -40,6 +41,11 @@ urlpatterns = [
         "me/email/",
         AddEmailView.as_view(),
         name="add-email",
+    ),
+    path(
+        "me/password/",
+        SetPasswordView.as_view(),
+        name="set-password",
     ),
     path(
         "me/nickname/",

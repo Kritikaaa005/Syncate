@@ -1,20 +1,3 @@
-// LOCATION: syncate-mobile/src/screens/dashboard/CycleCalendarScreen.tsx
-//
-// Continuous registered-user cycle calendar. This screen orchestrates
-// virtualized month scrolling, edit mode and inline period saving.
-// Month rendering stays in MonthGrid and all phase calculations remain
-// backend-owned through GET /me/calendar/?year=.
-//
-// === CHANGED: editing used to mean "pick one date, move a period's
-// start to it" — tapping a day inside a period only let you shift
-// where it began. It's now a real multi-day toggle: tap any number of
-// past dates to mark (or unmark) them as period days. Tapping into an
-// existing logged period seeds the whole thing so it can be grown or
-// shrunk, not just nudged. The Edit toggle and Save action also moved
-// out of the header/scroll flow into a sticky bottom bar (CalendarEditBar,
-// still exported from InlinePeriodEditor.tsx) so they're always within
-// thumb reach regardless of scroll position.
-
 import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import {
@@ -26,6 +9,7 @@ import {
 } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   type ListRenderItemInfo,
   Pressable,
@@ -55,13 +39,18 @@ import useDashboardCycle from "@/hooks/useDashboardCycle";
 import usePeriodLogs from "@/hooks/usePeriodLogs";
 import {
   logPeriod,
-  type PeriodLogResponse,
   updatePeriod,
 } from "@/services/cycleService";
 import {
   enumerateDateRange,
+  formatDisplayDate,
   formatShortDate,
 } from "@/utils/calendarUtils";
+import {
+  getLatestPeriod,
+  getPeriodEditCandidates,
+  shouldPromptForEarlyPeriodStart,
+} from "@/utils/periodCalendarEditUtils";
 
 // Reserves room at the bottom of the scrollable calendar so the last
 // month row never sits underneath the sticky CalendarEditBar, whose
@@ -90,18 +79,6 @@ function addMonths(date: Date, amount: number): Date {
   );
 }
 
-function dateFallsInsidePeriod(
-  dateValue: string,
-  period: PeriodLogResponse
-): boolean {
-  if (dateValue < period.start_date) {
-    return false;
-  }
-
-  const periodEnd = period.end_date ?? period.start_date;
-  return dateValue <= periodEnd;
-}
-
 function CycleCalendarScreen() {
   const { isDark } = useTheme();
 
@@ -117,6 +94,7 @@ function CycleCalendarScreen() {
     loading: dashboardLoading,
     dashboardState,
     lastPeriod,
+    reload: reloadDashboard,
   } = useDashboardCycle();
 
   const nickname = lastPeriod?.nickname?.trim() || "there";
@@ -177,35 +155,86 @@ function CycleCalendarScreen() {
     [anchorMonth, rangeEndOffset, rangeStartOffset]
   );
 
-  // Which existing logged period (if any) the current selection
-  // belongs to. Found this way rather than tracked separately so it
-  // always stays in sync with whatever's actually in pendingDates.
-  const targetPeriod = useMemo(() => {
+  // Resolve whether the staged span belongs to an existing period.
+  // A tap can target a directly overlapping log or a nearby continuation
+  // (for example, Aug 29 start -> Sep 3 still bleeding).
+  const editCandidates = useMemo(() => {
     if (pendingDates.length === 0) {
-      return null;
+      return [];
     }
 
-    return (
-      periodLogs.find((period) =>
-        pendingDates.some((dateValue) =>
-          dateFallsInsidePeriod(dateValue, period)
-        )
-      ) ?? null
+    const spanStart = pendingDates[0];
+    const spanEnd = pendingDates[pendingDates.length - 1];
+
+    return getPeriodEditCandidates(
+      periodLogs,
+      spanStart,
+      spanEnd
     );
   }, [pendingDates, periodLogs]);
 
-  const rangeStart = pendingDates[0] ?? null;
-  const rangeEnd = pendingDates[pendingDates.length - 1] ?? null;
+  // If a tap is inside, directly beside, or still plausibly part of one
+  // recent period, edit that row instead of creating another cycle start.
+  // More than one candidate is ambiguous, so never guess.
+  const hasConflict = editCandidates.length > 1;
+  const targetPeriod = hasConflict ? null : (editCandidates[0] ?? null);
 
-  // One PeriodLog row can only ever be one continuous range, so any
-  // gap between tapped days (e.g. tapping the 6th and the 9th) still
-  // gets saved as period days too. Surfaced in the edit bar so that's
-  // never a silent surprise.
-  const gapCount =
-    rangeStart && rangeEnd
-      ? enumerateDateRange(rangeStart, rangeEnd).length
-        - pendingDates.length
-      : 0;
+  const tappedStart = pendingDates[0] ?? null;
+  const tappedEnd = pendingDates[pendingDates.length - 1] ?? null;
+
+  // The range that will ACTUALLY be saved — the tapped span, widened
+  // to also cover targetPeriod's existing saved days if it has any
+  // outside that span (a period log can only ever be one contiguous
+  // range, so extending it can't leave a hole in the middle).
+  const previewStart = useMemo(() => {
+    if (!tappedStart) return null;
+    if (targetPeriod && targetPeriod.start_date < tappedStart) {
+      return targetPeriod.start_date;
+    }
+    return tappedStart;
+  }, [tappedStart, targetPeriod]);
+
+  const previewEnd = useMemo(() => {
+    if (!tappedEnd) return null;
+    const targetEnd = targetPeriod?.end_date ?? targetPeriod?.start_date ?? null;
+    if (targetEnd && targetEnd > tappedEnd) {
+      return targetEnd;
+    }
+    return tappedEnd;
+  }, [tappedEnd, targetPeriod]);
+
+  // Every day this save will mark as a period day that the user did
+  // NOT individually tap — either because tapped days weren't
+  // consecutive, or because merging with an existing period pulled in
+  // more days. Shown as an explicit preview so it's seen before
+  // Save, not discovered after.
+  const existingLoggedDates = useMemo(() => {
+    if (!targetPeriod) {
+      return new Set<string>();
+    }
+
+    return new Set(
+      enumerateDateRange(
+        targetPeriod.start_date,
+        targetPeriod.end_date ?? targetPeriod.start_date
+      )
+    );
+  }, [targetPeriod]);
+
+  const impliedDates = useMemo(() => {
+    if (!previewStart || !previewEnd) {
+      return new Set<string>();
+    }
+
+    const pendingSet = new Set(pendingDates);
+    return new Set(
+      enumerateDateRange(previewStart, previewEnd).filter(
+        (dateValue) =>
+          !pendingSet.has(dateValue)
+          && !existingLoggedDates.has(dateValue)
+      )
+    );
+  }, [existingLoggedDates, previewStart, previewEnd, pendingDates]);
 
   const clearSelection = useCallback(() => {
     if (isSubmitting) {
@@ -241,68 +270,92 @@ function CycleCalendarScreen() {
     setIsEditMode(true);
   };
 
+  const stageDateToggle = useCallback((dateValue: string) => {
+    setSaveError("");
+    setSavedRangeLabel(null);
+
+    setPendingDates((current) =>
+      current.includes(dateValue)
+        ? current.filter((existing) => existing !== dateValue)
+        : [...current, dateValue].sort()
+    );
+  }, []);
+
   const handleDateSelect = useCallback(
     (dateValue: string) => {
       if (!isEditMode || isSubmitting) {
         return;
       }
 
-      setSaveError("");
-      setSavedRangeLabel(null);
-
-      // Tapping an already-selected day toggles it back off — this is
-      // what lets a period be shrunk, not just grown.
+      // Untapping a staged date never needs confirmation.
       if (pendingDates.includes(dateValue)) {
-        setPendingDates(
-          pendingDates.filter((existing) => existing !== dateValue)
-        );
+        stageDateToggle(dateValue);
         return;
       }
 
-      // First tap of a fresh session: if it lands inside an existing
-      // logged period, seed the whole period's saved range so it can
-      // be edited freely, instead of only being able to move its
-      // start date.
+      // Confirmation is only for the FIRST tap that looks like a brand-new
+      // period starting before the current estimate. Extending an existing
+      // period (e.g. Aug 29 -> Sep 3) deliberately skips this prompt.
       if (pendingDates.length === 0) {
-        const existingPeriod = periodLogs.find((period) =>
-          dateFallsInsidePeriod(dateValue, period)
+        const singleDateTargets = getPeriodEditCandidates(
+          periodLogs,
+          dateValue,
+          dateValue
         );
+        const latestPeriod = getLatestPeriod(periodLogs);
 
-        setPendingDates(
-          existingPeriod
-            ? enumerateDateRange(
-              existingPeriod.start_date,
-              existingPeriod.end_date ?? existingPeriod.start_date
-            )
-            : [dateValue]
-        );
-        return;
+        if (
+          shouldPromptForEarlyPeriodStart({
+            selectedDate: dateValue,
+            estimatedNextPeriodDate: lastPeriod?.next_period_date,
+            latestPeriod,
+            hasEditTarget: singleDateTargets.length > 0,
+          })
+        ) {
+          const selectedLabel = formatDisplayDate(dateValue);
+          const estimatedLabel = formatDisplayDate(
+            lastPeriod?.next_period_date ?? ""
+          );
+
+          Alert.alert(
+            "Update cycle start?",
+            `Your next period was estimated to start around ${estimatedLabel}. If it started on ${selectedLabel}, Syncate will use that date as the new cycle start and recalculate the upcoming estimates.`,
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: `Use ${formatShortDate(dateValue)}`,
+                onPress: () => stageDateToggle(dateValue),
+              },
+            ]
+          );
+          return;
+        }
       }
 
-      // Stop two distinct saved periods getting merged into one row
-      // by accident — finish (or clear) the current selection first.
-      const tappedBelongsTo = periodLogs.find((period) =>
-        dateFallsInsidePeriod(dateValue, period)
-      );
-
-      if (
-        tappedBelongsTo
-        && targetPeriod
-        && tappedBelongsTo.id !== targetPeriod.id
-      ) {
-        setSaveError(
-          "Finish saving this period before editing another one."
-        );
-        return;
-      }
-
-      setPendingDates([...pendingDates, dateValue].sort());
+      stageDateToggle(dateValue);
     },
-    [isEditMode, isSubmitting, pendingDates, periodLogs, targetPeriod]
+    [
+      isEditMode,
+      isSubmitting,
+      lastPeriod?.next_period_date,
+      pendingDates,
+      periodLogs,
+      stageDateToggle,
+    ]
   );
 
   const handleSave = async () => {
-    if (!rangeStart || !rangeEnd || isSubmitting || !isEditMode) {
+    if (!previewStart || !previewEnd || isSubmitting || !isEditMode) {
+      return;
+    }
+
+    if (hasConflict) {
+      setSaveError(
+        "Your selected days overlap more than one existing period. Please adjust your selection."
+      );
       return;
     }
 
@@ -312,28 +365,35 @@ function CycleCalendarScreen() {
     try {
       if (targetPeriod) {
         await updatePeriod(targetPeriod.id, {
-          start_date: rangeStart,
-          end_date: rangeEnd,
+          start_date: previewStart,
+          end_date: previewEnd,
+        });
+      } else if (previewStart === previewEnd) {
+        // Day 1 is a fact; the end date is not known yet. Leaving end_date
+        // null lets the backend show the user's usual remaining period days
+        // as estimates. If bleeding continues, a later tap extends THIS row.
+        await logPeriod({
+          start_date: previewStart,
         });
       } else {
         await logPeriod({
-          start_date: rangeStart,
-          end_date: rangeEnd,
+          start_date: previewStart,
+          end_date: previewEnd,
         });
       }
 
-      // Refresh every year the user has actually loaded. Editing an
-      // older period can affect predictions after that date, so only
-      // refreshing the current year would leave visible years stale.
+      // Refresh calendar, history AND the dashboard prediction anchor.
+      // A newly logged early period changes all three.
       await Promise.all([
         reloadLoadedYears(),
         reloadPeriodLogs(),
+        reloadDashboard(),
       ]);
 
       setSavedRangeLabel(
-        rangeStart === rangeEnd
-          ? formatShortDate(rangeStart)
-          : `${formatShortDate(rangeStart)} – ${formatShortDate(rangeEnd)}`
+        previewStart === previewEnd
+          ? formatShortDate(previewStart)
+          : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
       );
       setPendingDates([]);
     } catch (error) {
@@ -425,6 +485,7 @@ function CycleCalendarScreen() {
         theme={theme}
         phaseTheme={phaseTheme}
         selectedDates={pendingDatesSet}
+        impliedDates={impliedDates}
         onSelectDate={handleDateSelect}
         editingEnabled={isEditMode}
         disabled={periodsLoading || isSubmitting}
@@ -433,6 +494,7 @@ function CycleCalendarScreen() {
     [
       daysByDate,
       handleDateSelect,
+      impliedDates,
       isEditMode,
       isSubmitting,
       pendingDatesSet,
@@ -599,10 +661,11 @@ function CycleCalendarScreen() {
           isEditMode={isEditMode}
           onToggleEditMode={handleEditToggle}
           pendingCount={pendingDates.length}
-          rangeStart={rangeStart}
-          rangeEnd={rangeEnd}
-          gapCount={gapCount}
+          previewStart={previewStart}
+          previewEnd={previewEnd}
+          impliedCount={impliedDates.size}
           isEditingExisting={targetPeriod !== null}
+          hasConflict={hasConflict}
           isSubmitting={isSubmitting}
           errorMessage={saveError}
           savedRangeLabel={savedRangeLabel}
