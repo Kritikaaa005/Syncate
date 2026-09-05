@@ -98,6 +98,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "register": "10/hour",
         "email-verification-resend": "5/hour",
+        "partner-code-validation": "30/hour",
+        "partner-registration": "10/hour",
     },
 }
 

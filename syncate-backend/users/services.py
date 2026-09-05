@@ -26,12 +26,134 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.db import IntegrityError, transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import EmailVerificationToken
+from .models import EmailVerificationToken, UserPartner
 
 TOKEN_LIFETIME = timedelta(hours=24)
+PARTNER_CODE_LIFETIME = timedelta(hours=24)
+PARTNER_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+PARTNER_CODE_LENGTH = 8
+
+
+class PartnerAlreadyLinkedError(Exception):
+    pass
+
+
+class InvalidPartnerCodeError(Exception):
+    pass
+
+
+def normalize_partner_code(raw_code: str) -> str:
+    return (raw_code or "").strip().upper()
+
+
+def _new_partner_code() -> str:
+    return "".join(
+        secrets.choice(PARTNER_CODE_ALPHABET)
+        for _ in range(PARTNER_CODE_LENGTH)
+    )
+
+
+def issue_partner_code(user: User) -> UserPartner:
+    expires_at = timezone.now() + PARTNER_CODE_LIFETIME
+
+    with transaction.atomic():
+        try:
+            relationship = UserPartner.objects.select_for_update().get(user=user)
+        except UserPartner.DoesNotExist:
+            relationship = UserPartner(user=user)
+
+        if relationship.partner_id is not None:
+            raise PartnerAlreadyLinkedError("A partner is already linked to this account.")
+
+        next_counter = relationship.counter + 1
+
+        for _ in range(10):
+            candidate = _new_partner_code()
+            relationship.code = candidate
+            relationship.expiration_date = expires_at
+            relationship.counter = next_counter
+
+            try:
+                with transaction.atomic():
+                    relationship.save()
+                return relationship
+            except IntegrityError:
+                if UserPartner.objects.filter(code=candidate).exists():
+                    continue
+                raise
+
+    raise RuntimeError("Could not generate a unique partner code.")
+
+
+def get_valid_partner_relationship(raw_code: str) -> UserPartner | None:
+    code = normalize_partner_code(raw_code)
+
+    if not code:
+        return None
+
+    try:
+        relationship = UserPartner.objects.get(code=code)
+    except UserPartner.DoesNotExist:
+        return None
+
+    if (
+        relationship.partner_id is not None
+        or relationship.expiration_date is None
+        or relationship.expiration_date <= timezone.now()
+    ):
+        return None
+
+    return relationship
+
+
+def link_new_partner(raw_code: str, registration_data: dict, nickname: str) -> UserPartner:
+    from registration.serializers import RegistrationSerializer
+
+    code = normalize_partner_code(raw_code)
+
+    with transaction.atomic():
+        try:
+            relationship = UserPartner.objects.select_for_update().get(code=code)
+        except UserPartner.DoesNotExist as exc:
+            raise InvalidPartnerCodeError("Invalid or expired partner code.") from exc
+
+        if (
+            relationship.partner_id is not None
+            or relationship.expiration_date is None
+            or relationship.expiration_date <= timezone.now()
+        ):
+            raise InvalidPartnerCodeError("Invalid or expired partner code.")
+
+        partner = RegistrationSerializer().create(registration_data)
+
+        if partner.pk == relationship.user_id:
+            raise InvalidPartnerCodeError("Invalid partner relationship.")
+
+        if UserPartner.objects.filter(partner=partner).exists():
+            raise InvalidPartnerCodeError("This account is already linked as a partner.")
+
+        partner.profile.nickname = nickname
+        partner.profile.save(update_fields=["nickname", "updated_at"])
+
+        relationship.partner = partner
+        relationship.linked_at = timezone.now()
+        relationship.code = None
+        relationship.expiration_date = None
+        relationship.save(
+            update_fields=[
+                "partner",
+                "linked_at",
+                "code",
+                "expiration_date",
+                "updated_at",
+            ]
+        )
+
+        return relationship
 
 
 def issue_email_verification_token(user: User, email: str) -> EmailVerificationToken:

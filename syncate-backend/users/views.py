@@ -22,6 +22,7 @@ from rest_framework.permissions import (
     IsAuthenticated,
 )
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import (
     RefreshToken,
@@ -30,10 +31,17 @@ from rest_framework_simplejwt.tokens import (
 from .models import UserProfile
 from .serializers import (
     NicknameSerializer,
+    PartnerCodeSerializer,
+    PartnerRegistrationSerializer,
     TrackingModeSerializer,
 )
 from .services import (
+    InvalidPartnerCodeError,
+    PartnerAlreadyLinkedError,
     consume_email_verification_token,
+    get_valid_partner_relationship,
+    issue_partner_code,
+    link_new_partner,
 )
 
 
@@ -292,4 +300,92 @@ class LoginView(APIView):
                 },
             },
             status=status.HTTP_200_OK,
+        )
+
+
+class PartnerCodeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            relationship = issue_partner_code(request.user)
+        except PartnerAlreadyLinkedError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return Response(
+            {
+                "code": relationship.code,
+                "expires_at": relationship.expiration_date,
+                "counter": relationship.counter,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ValidatePartnerCodeView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "partner-code-validation"
+
+    def post(self, request):
+        serializer = PartnerCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        relationship = get_valid_partner_relationship(serializer.validated_data["code"])
+        if relationship is None:
+            return Response(
+                {"detail": "Invalid or expired partner code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({"valid": True}, status=status.HTTP_200_OK)
+
+
+class RegisterPartnerView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "partner-registration"
+
+    def post(self, request):
+        serializer = PartnerRegistrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        registration_data = {
+            "date_of_birth": data["date_of_birth"],
+            "email": data["email"],
+            "password": data["password"],
+        }
+
+        try:
+            relationship = link_new_partner(
+                data["code"],
+                registration_data,
+                data["nickname"],
+            )
+        except InvalidPartnerCodeError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        partner = relationship.partner
+        refresh = RefreshToken.for_user(partner)
+
+        return Response(
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": {
+                    "id": partner.id,
+                    "email": partner.email,
+                    "nickname": partner.profile.nickname,
+                    "is_email_verified": partner.profile.is_email_verified,
+                    "email_verification_sent": bool(partner.email),
+                },
+            },
+            status=status.HTTP_201_CREATED,
         )

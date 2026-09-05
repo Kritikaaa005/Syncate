@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from registration.serializers import RegistrationSerializer
 
 from .models import UserProfile
 
@@ -44,3 +45,24 @@ class TrackingModeSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ("tracking_mode",)
+
+
+class PartnerCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=8, trim_whitespace=True)
+
+    def validate_code(self, value):
+        code = value.upper()
+        if not code:
+            raise serializers.ValidationError("A partner code is required.")
+        return code
+
+
+class PartnerRegistrationSerializer(RegistrationSerializer):
+    code = serializers.CharField(max_length=8, trim_whitespace=True)
+    nickname = serializers.CharField(max_length=30, trim_whitespace=False)
+
+    def validate_code(self, value):
+        return value.strip().upper()
+
+    def validate_nickname(self, value):
+        return NicknameSerializer().validate_nickname(value)

@@ -21,14 +21,32 @@ from rest_framework_simplejwt.views import (
 
 from .views import (
     LoginView,
+    PartnerCodeView,
+    RegisterPartnerView,
     UpdateNicknameView,
     UpdateTrackingModeView,
+    ValidatePartnerCodeView,
     VerifyEmailConfirmView,
 )
 
 
 # Included under /api/users/
 urlpatterns = [
+    path(
+        "partner/code/",
+        PartnerCodeView.as_view(),
+        name="partner-code",
+    ),
+    path(
+        "partner/validate-code/",
+        ValidatePartnerCodeView.as_view(),
+        name="validate-partner-code",
+    ),
+    path(
+        "partner/register/",
+        RegisterPartnerView.as_view(),
+        name="register-partner",
+    ),
     path(
         "me/nickname/",
         UpdateNicknameView.as_view(),
