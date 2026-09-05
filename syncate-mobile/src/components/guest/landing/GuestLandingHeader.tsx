@@ -1,4 +1,5 @@
 import { Heart, Moon, Sun } from "lucide-react-native";
+import { router } from "expo-router";
 import {
   Platform,
   Pressable,
@@ -10,15 +11,10 @@ import {
 import { useTheme } from "@/contexts/ThemeContext";
 
 function GuestLandingHeader() {
-  const { isDark, toggleDark } = useTheme();
+  const { isDark, toggleDark, colors } = useTheme();
 
-  const accentColor = isDark
-    ? "rgba(255,124,163,0.9)"
-    : "rgba(242,56,106,0.9)";
-
-  const heartColor = isDark
-    ? "rgba(255,124,163,0.8)"
-    : "rgba(242,56,106,0.8)";
+  const accentColor = `${colors.primary}E6`;
+  const heartColor = `${colors.secondary}CC`;
 
   return (
     <View style={styles.header}>
@@ -41,6 +37,10 @@ function GuestLandingHeader() {
         />
       </View>
 
+      <View style={styles.headerActions}>
+        <Pressable onPress={() => router.push("/login")} accessibilityRole="button">
+          <Text style={[styles.signIn, { color: colors.primary }]}>Sign in</Text>
+        </Pressable>
       <Pressable
         onPress={toggleDark}
         accessibilityRole="button"
@@ -48,7 +48,7 @@ function GuestLandingHeader() {
         style={({ pressed }) => [
           styles.toggleButton,
           {
-            borderColor: isDark ? "#FFFFFF" : "#F4467A",
+            borderColor: isDark ? "#FFFFFF" : colors.primary,
           },
           pressed && styles.pressed,
         ]}
@@ -56,9 +56,10 @@ function GuestLandingHeader() {
         {isDark ? (
           <Sun size={18} color="#FFFFFF" />
         ) : (
-          <Moon size={18} color="#F2386A" />
+          <Moon size={18} color={colors.primary} />
         )}
       </Pressable>
+      </View>
     </View>
   );
 }
@@ -96,6 +97,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 14 },
+  signIn: { fontSize: 14, fontWeight: "700" },
 
   pressed: {
     opacity: 0.8,

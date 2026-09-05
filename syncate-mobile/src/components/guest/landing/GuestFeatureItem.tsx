@@ -7,7 +7,7 @@ type GuestFeatureItemProps = {
 };
 
 function GuestFeatureItem({ feature }: GuestFeatureItemProps) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
   const Icon = feature.icon;
 
   return (
@@ -16,11 +16,11 @@ function GuestFeatureItem({ feature }: GuestFeatureItemProps) {
         style={[
           styles.iconBox,
           {
-            backgroundColor: isDark ? "#3A2430" : "#FCE7EF",
+            backgroundColor: colors.primarySoft,
           },
         ]}
       >
-        <Icon size={15} color={isDark ? "#FF7CA3" : "#F2386A"} />
+        <Icon size={15} color={colors.primary} />
       </View>
 
       <Text

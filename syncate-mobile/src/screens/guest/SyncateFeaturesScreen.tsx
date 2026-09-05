@@ -20,7 +20,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const SIGNUP_ROUTE =
@@ -60,11 +59,7 @@ const features: FeatureItem[] = [
 ];
 
 function SyncateFeaturesScreen() {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   return (
     <SafeAreaView

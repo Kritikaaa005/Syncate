@@ -18,7 +18,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePublishedArticle } from "@/hooks/usePublishedArticle";
 
@@ -26,8 +25,7 @@ export default function ArticleDetail() {
   const params = useLocalSearchParams<{ slug?: string | string[] }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { isDark, colors: t } = useTheme();
 
   const { article, loading, error } = usePublishedArticle(slug);
 

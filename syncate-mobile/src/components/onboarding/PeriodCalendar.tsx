@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   getCalendarCells,
@@ -53,11 +52,7 @@ function PeriodCalendar({
   onSelect,
   disabled = false,
 }: PeriodCalendarProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const today = useMemo(
     () => startOfDay(new Date()),

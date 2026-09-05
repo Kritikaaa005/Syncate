@@ -14,6 +14,7 @@ Account creation itself belongs to the registration app.
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.shortcuts import render
+from django.utils import timezone
 from django.views import View
 
 from rest_framework import status
@@ -34,6 +35,10 @@ from .serializers import (
 )
 from .services import (
     consume_email_verification_token,
+    deactivate_account,
+    permanently_delete_user,
+    restore_scheduled_account,
+    schedule_account_deletion,
 )
 
 
@@ -84,13 +89,29 @@ class UpdateNicknameView(APIView):
 
 class UpdateTrackingModeView(APIView):
     """
-    PATCH /api/users/me/tracking-mode/
+    GET or PATCH /api/users/me/tracking-mode/
     """
 
     permission_classes = [
         IsAuthenticated,
     ]
 
+    def get(self, request):
+        profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+        return Response(
+            {
+                "profile_id": profile.profile_id,
+                "nickname": profile.nickname,
+                "tracking_mode": profile.tracking_mode,
+                "tracking_mode_label": (
+                    profile.get_tracking_mode_display()
+                    if profile.tracking_mode
+                    else ""
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
     def patch(self, request):
         profile, _ = (
             UserProfile.objects.get_or_create(
@@ -131,6 +152,71 @@ class UpdateTrackingModeView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class DeactivateAccountView(APIView):
+    """DELETE /api/users/me/account/"""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        deactivate_account(request.user)
+        return Response(
+            {"detail": "Account deactivated successfully."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class ScheduleAccountDeletionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        due_at = schedule_account_deletion(request.user)
+        return Response({
+            "detail": "Account scheduled for deletion.",
+            "deletion_due_at": due_at,
+        })
+
+
+class PermanentDeleteAccountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        permanently_delete_user(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RestoreScheduledAccountView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        password = request.data.get("password") or ""
+        try:
+            user = User.objects.select_related("profile").get(email__iexact=email)
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
+            user = None
+
+        if not user or not user.check_password(password):
+            return Response(
+                {"detail": "Incorrect email or password."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        try:
+            user = restore_scheduled_account(user)
+        except ValueError:
+            return Response(
+                {"detail": "This account can no longer be restored."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "detail": "Account restored successfully.",
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
 
 
 class VerifyEmailConfirmView(View):
@@ -200,21 +286,39 @@ class LoginView(APIView):
         try:
             user_record = User.objects.get(
                 email__iexact=email,
-                is_active=True,
+            )
+        except User.DoesNotExist:
+            user_record = None
+        except User.MultipleObjectsReturned:
+            user_record = None
+
+        if not user_record or not user_record.check_password(password):
+            return Response(
+                {"detail": "Incorrect email or password."},
+                status=status.HTTP_401_UNAUTHORIZED,
             )
 
-            username = user_record.username
-        except User.DoesNotExist:
-            username = None
-        except User.MultipleObjectsReturned:
-            username = None
+        profile, _ = UserProfile.objects.get_or_create(user=user_record)
+
+        if (
+            profile.deletion_due_at
+            and profile.deletion_due_at > timezone.now()
+        ):
+            return Response(
+                {
+                    "code": "ACCOUNT_SCHEDULED_FOR_DELETION",
+                    "detail": "This account is scheduled for deletion.",
+                    "deletion_due_at": profile.deletion_due_at,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         user = None
 
-        if username:
+        if user_record.is_active:
             user = authenticate(
                 request=request,
-                username=username,
+                username=user_record.username,
                 password=password,
             )
 
@@ -230,12 +334,6 @@ class LoginView(APIView):
                     status.HTTP_401_UNAUTHORIZED
                 ),
             )
-
-        profile, _ = (
-            UserProfile.objects.get_or_create(
-                user=user,
-            )
-        )
 
         if profile.is_deleted:
             return Response(

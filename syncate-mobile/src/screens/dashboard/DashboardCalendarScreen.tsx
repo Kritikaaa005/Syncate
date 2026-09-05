@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { saveLastPeriod } from "@/services/cycleService";
 import { formatDisplayDate } from "@/utils/calendarUtils";
@@ -29,11 +28,7 @@ const DASHBOARD_ROUTE =
   "/dashboard" as Href;
 
 function DashboardCalendarScreen() {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const [
     selectedDate,

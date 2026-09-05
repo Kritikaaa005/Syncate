@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { saveLastPeriod } from "@/services/cycleService";
 import { formatDisplayDate } from "@/utils/calendarUtils";
@@ -32,11 +31,8 @@ function LastPeriodScreen() {
   const {
     isDark,
     toggleDark,
+    colors: theme,
   } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
 
   const [
     selectedDate,

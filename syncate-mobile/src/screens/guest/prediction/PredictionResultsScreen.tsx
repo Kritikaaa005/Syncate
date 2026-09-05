@@ -21,7 +21,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   addDays,
@@ -73,8 +72,7 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
 }
 
 function PredictionResults() {
-  const { isDark, toggleDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { isDark, toggleDark, colors, colors: t } = useTheme();
 
   const params = useLocalSearchParams<{
     lastPeriodDate?: string;
@@ -192,10 +190,10 @@ function PredictionResults() {
 
   const phaseStyles: Record<PhaseKey, PhaseStyle> = {
     period: {
-      dot: isDark ? "#FF7CA3" : "#F2386A",
-      lightCell: "#FCE7EF",
+      dot: colors.primary,
+      lightCell: colors.primarySoft,
       lightText: "#D92A5B",
-      darkCell: "#3A2430",
+      darkCell: colors.primarySoft,
       darkText: "#FF91B2",
     },
 
@@ -250,14 +248,14 @@ function PredictionResults() {
                 style={({ pressed }) => [
                   styles.circleButton,
                   {
-                    borderColor: isDark ? "#FFFFFF" : "#F4467A",
+                    borderColor: isDark ? "#FFFFFF" : colors.primary,
                   },
                   pressed && styles.buttonPressed,
                 ]}
               >
                 <ArrowLeft
                   size={18}
-                  color={isDark ? "#FFFFFF" : "#F2386A"}
+                  color={isDark ? "#FFFFFF" : colors.primary}
                 />
               </Pressable>
 
@@ -268,7 +266,7 @@ function PredictionResults() {
                 style={({ pressed }) => [
                   styles.circleButton,
                   {
-                    borderColor: isDark ? "#FFFFFF" : "#F4467A",
+                    borderColor: isDark ? "#FFFFFF" : colors.primary,
                   },
                   pressed && styles.buttonPressed,
                 ]}
@@ -276,7 +274,7 @@ function PredictionResults() {
                 {isDark ? (
                   <Sun size={18} color="#FFFFFF" />
                 ) : (
-                  <Moon size={18} color="#F2386A" />
+                  <Moon size={18} color={colors.primary} />
                 )}
               </Pressable>
             </View>
@@ -298,7 +296,7 @@ function PredictionResults() {
               styles.nextPeriodCard,
               {
                 borderColor: isDark ? "#3A2A38" : "#E8EEF8",
-                backgroundColor: isDark ? "#221A28" : "#FCE7EF",
+                backgroundColor: colors.primarySoft,
               },
             ]}
           >
@@ -306,7 +304,7 @@ function PredictionResults() {
               style={[
                 styles.nextPeriodLabel,
                 {
-                  color: isDark ? "#FF7CA3" : "#F2386A",
+                  color: colors.primary,
                 },
               ]}
             >
@@ -328,7 +326,7 @@ function PredictionResults() {
               style={[
                 styles.pill,
                 {
-                  backgroundColor: isDark ? "#3A2430" : "#FFFFFF",
+                  backgroundColor: isDark ? colors.primarySoft : "#FFFFFF",
                 },
               ]}
             >
@@ -336,7 +334,7 @@ function PredictionResults() {
                 style={[
                   styles.pillText,
                   {
-                    color: isDark ? "#FF7CA3" : "#F2386A",
+                    color: colors.primary,
                   },
                 ]}
               >
@@ -361,13 +359,13 @@ function PredictionResults() {
                 style={[
                   styles.statIcon,
                   {
-                    backgroundColor: isDark ? "#3A2430" : "#FCE7EF",
+                    backgroundColor: colors.primarySoft,
                   },
                 ]}
               >
                 <Timer
                   size={15}
-                  color={isDark ? "#FF7CA3" : "#F2386A"}
+                  color={colors.primary}
                 />
               </View>
 
@@ -407,13 +405,13 @@ function PredictionResults() {
                 style={[
                   styles.statIcon,
                   {
-                    backgroundColor: isDark ? "#3A2430" : "#FCE7EF",
+                    backgroundColor: colors.primarySoft,
                   },
                 ]}
               >
                 <CalendarDays
                   size={15}
-                  color={isDark ? "#FF7CA3" : "#F2386A"}
+                  color={colors.primary}
                 />
               </View>
 
@@ -453,13 +451,13 @@ function PredictionResults() {
                 style={[
                   styles.statIcon,
                   {
-                    backgroundColor: isDark ? "#3A2430" : "#FCE7EF",
+                    backgroundColor: colors.primarySoft,
                   },
                 ]}
               >
                 <Sparkle
                   size={15}
-                  color={isDark ? "#FF7CA3" : "#F2386A"}
+                  color={colors.primary}
                 />
               </View>
 
@@ -509,7 +507,7 @@ function PredictionResults() {
               >
                 <ChevronLeft
                   size={18}
-                  color={isDark ? "#FF7CA3" : "#F2386A"}
+                  color={colors.primary}
                 />
               </Pressable>
 
@@ -536,7 +534,7 @@ function PredictionResults() {
               >
                 <ChevronRight
                   size={18}
-                  color={isDark ? "#FF7CA3" : "#F2386A"}
+                  color={colors.primary}
                 />
               </Pressable>
             </View>
@@ -706,7 +704,7 @@ function PredictionResults() {
               styles.aboutCard,
               {
                 borderColor: isDark ? "#3A2A38" : "#E8EEF8",
-                backgroundColor: isDark ? "#221A28" : "#FCE7EF",
+                backgroundColor: colors.primarySoft,
               },
             ]}
           >
@@ -714,7 +712,7 @@ function PredictionResults() {
               style={[
                 styles.aboutTitle,
                 {
-                  color: isDark ? "#FF7CA3" : "#F2386A",
+                  color: colors.primary,
                 },
               ]}
             >
@@ -746,7 +744,8 @@ function PredictionResults() {
             style={({ pressed }) => [
               styles.primaryButton,
               {
-                backgroundColor: isDark ? "#FF6F98" : "#F4467A",
+                backgroundColor: colors.primaryButton,
+                shadowColor: colors.shadow,
               },
               pressed && styles.pressedScale,
             ]}
@@ -765,14 +764,14 @@ function PredictionResults() {
           >
             <BookOpenText
               size={15}
-              color={isDark ? "#FF7CA3" : "#F2386A"}
+              color={colors.primary}
             />
 
             <Text
               style={[
                 styles.secondaryLinkText,
                 {
-                  color: isDark ? "#FF7CA3" : "#F2386A",
+                  color: colors.primary,
                 },
               ]}
             >
@@ -781,7 +780,7 @@ function PredictionResults() {
 
             <ArrowRight
               size={14}
-              color={isDark ? "#FF7CA3" : "#F2386A"}
+              color={colors.primary}
             />
           </Pressable>
         </View>
@@ -1068,7 +1067,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
 
-    shadowColor: "#F4467A",
     shadowOffset: {
       width: 0,
       height: 8,

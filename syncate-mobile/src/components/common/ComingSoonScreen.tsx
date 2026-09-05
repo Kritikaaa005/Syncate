@@ -3,7 +3,6 @@ import { ArrowLeft, Sparkles } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type ComingSoonScreenProps = {
@@ -12,8 +11,7 @@ type ComingSoonScreenProps = {
 };
 
 export default function ComingSoonScreen({ title, description }: ComingSoonScreenProps) {
-  const { isDark } = useTheme();
-  const theme = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>

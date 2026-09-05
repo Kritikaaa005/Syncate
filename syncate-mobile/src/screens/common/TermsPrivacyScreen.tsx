@@ -17,7 +17,6 @@ import React from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import LegalDocumentBody from "@/components/common/LegalDocumentBody";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import type { BackendLegalDocument } from "@/types/legalDocument";
 
@@ -28,8 +27,7 @@ type TermsPrivacyScreenProps = {
 };
 
 export default function TermsPrivacyScreen({ documents, loading, onAgree }: TermsPrivacyScreenProps) {
-  const { isDark } = useTheme();
-  const colors = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors } = useTheme();
   const ready = documents.length > 0;
 
   return (

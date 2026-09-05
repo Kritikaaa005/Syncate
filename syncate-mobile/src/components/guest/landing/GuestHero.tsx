@@ -5,7 +5,7 @@ const quickPredictionIllustration = require("../../../../assets/images/quickPred
 const quickPredictionIllustrationDark = require("../../../../assets/images/quickPredictionIllustrationDark.png");
 
 function GuestHero() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -25,7 +25,7 @@ function GuestHero() {
           style={[
             styles.titleLine2,
             {
-              color: isDark ? "#FF7CA3" : "#F2386A",
+              color: colors.primary,
             },
           ]}
         >

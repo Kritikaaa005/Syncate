@@ -13,11 +13,11 @@ const LEARN_MORE_ROUTE =
   "/guest/learn-more" as Href;
 
 function GuestMoreFeatures() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   const textColor = isDark ? "#F3EDF1" : "#1E1730";
   const mutedColor = isDark ? "#B7ACB8" : "#8D8A99";
-  const primaryColor = isDark ? "#FF7CA3" : "#F2386A";
+  const primaryColor = colors.primary;
 
   return (
     <View
@@ -51,7 +51,8 @@ function GuestMoreFeatures() {
         style={({ pressed }) => [
           styles.ctaButton,
           {
-            backgroundColor: isDark ? "#FF6F98" : "#F4467A",
+            backgroundColor: colors.primaryButton,
+            shadowColor: colors.shadow,
           },
           pressed && styles.pressedScale,
         ]}
@@ -131,7 +132,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
 
-    shadowColor: "#F4467A",
     shadowOffset: {
       width: 0,
       height: 8,

@@ -9,7 +9,7 @@ type CalculateButtonProps = {
 };
 
 function CalculateButton({ onPress }: CalculateButtonProps) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
   return (
     <View style={styles.wrap}>
@@ -17,7 +17,7 @@ function CalculateButton({ onPress }: CalculateButtonProps) {
         onPress={onPress}
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: isDark ? "#FF6F98" : "#F4467A" },
+          { backgroundColor: colors.primaryButton, shadowColor: colors.shadow },
           pressed && styles.pressedScale,
         ]}
       >
@@ -41,7 +41,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 24,
     paddingVertical: 10,
-    shadowColor: "#F4467A",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.3,
     shadowRadius: 24,

@@ -42,7 +42,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import DateOfBirthInput, { toISODateString } from "@/components/signup/DateOfBirthInput";
 import LanguageDropdown from "@/components/signup/LanguageDropdown";
 import TermsViewerModal from "@/components/signup/TermsViewerModal";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLegalDocument } from "@/hooks/useLegalDocument";
 import { RegistrationError, register } from "@/services/registrationService";
@@ -51,8 +50,7 @@ import type { BackendLegalDocument } from "@/types/legalDocument";
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { isDark, colors: t } = useTheme();
 
   const [day, setDay] = useState("");
   const [month, setMonth] = useState("");

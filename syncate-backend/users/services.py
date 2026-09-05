@@ -26,12 +26,24 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import EmailVerificationToken
+from .models import EmailVerificationToken, UserProfile
 
 TOKEN_LIFETIME = timedelta(hours=24)
+DELETION_GRACE_PERIOD = timedelta(days=30)
+
+
+def _blacklist_outstanding_tokens(user: User) -> None:
+    from rest_framework_simplejwt.token_blacklist.models import (
+        BlacklistedToken,
+        OutstandingToken,
+    )
+
+    for token in OutstandingToken.objects.filter(user=user):
+        BlacklistedToken.objects.get_or_create(token=token)
 
 
 def issue_email_verification_token(user: User, email: str) -> EmailVerificationToken:
@@ -126,6 +138,7 @@ def consume_email_verification_token(raw_token: str) -> EmailVerificationToken |
     return token
 
 
+@transaction.atomic
 def deactivate_account(user: User) -> None:
     """
     The soft-delete flow for a registered (mobile-app) user — NOT to be
@@ -148,17 +161,71 @@ def deactivate_account(user: User) -> None:
        naturally expired (up to 30 days) — soft-deleting the row
        wouldn't actually stop API access at all without this step.
     """
-    from rest_framework_simplejwt.token_blacklist.models import (
-        BlacklistedToken,
-        OutstandingToken,
-    )
+    locked_user = User.objects.select_for_update().get(pk=user.pk)
+    profile = UserProfile.objects.select_for_update().get(user=locked_user)
 
-    user.profile.is_deleted = True
-    user.profile.save(update_fields=["is_deleted", "updated_at"])
+    profile.is_active = False
+    profile.is_deleted = True
+    profile.deletion_requested_at = None
+    profile.deletion_due_at = None
+    profile.save(update_fields=[
+        "is_active", "is_deleted", "deletion_requested_at",
+        "deletion_due_at", "updated_at",
+    ])
 
-    user.is_active = False
-    user.save(update_fields=["is_active"])
+    locked_user.is_active = False
+    locked_user.save(update_fields=["is_active"])
 
-    outstanding = OutstandingToken.objects.filter(user=user)
-    for token in outstanding:
-        BlacklistedToken.objects.get_or_create(token=token)
+    _blacklist_outstanding_tokens(locked_user)
+
+
+@transaction.atomic
+def schedule_account_deletion(user: User):
+    locked_user = User.objects.select_for_update().get(pk=user.pk)
+    profile = UserProfile.objects.select_for_update().get(user=locked_user)
+    requested_at = timezone.now()
+
+    profile.is_active = False
+    profile.is_deleted = True
+    profile.deletion_requested_at = requested_at
+    profile.deletion_due_at = requested_at + DELETION_GRACE_PERIOD
+    profile.save(update_fields=[
+        "is_active", "is_deleted", "deletion_requested_at",
+        "deletion_due_at", "updated_at",
+    ])
+    locked_user.is_active = False
+    locked_user.save(update_fields=["is_active"])
+    _blacklist_outstanding_tokens(locked_user)
+    return profile.deletion_due_at
+
+
+@transaction.atomic
+def restore_scheduled_account(user: User) -> User:
+    locked_user = User.objects.select_for_update().get(pk=user.pk)
+    profile = UserProfile.objects.select_for_update().get(user=locked_user)
+    if not profile.deletion_due_at or timezone.now() >= profile.deletion_due_at:
+        raise ValueError("Account is not restorable.")
+
+    profile.is_active = True
+    profile.is_deleted = False
+    profile.deletion_requested_at = None
+    profile.deletion_due_at = None
+    profile.save(update_fields=[
+        "is_active", "is_deleted", "deletion_requested_at",
+        "deletion_due_at", "updated_at",
+    ])
+    locked_user.is_active = True
+    locked_user.save(update_fields=["is_active"])
+    return locked_user
+
+
+@transaction.atomic
+def permanently_delete_user(user: User) -> None:
+    """Delete private account data through audited Django relationships.
+
+    CASCADE removes UserProfile, EmailVerificationToken, CycleProfile,
+    LegalDocumentAcceptance, and SimpleJWT token rows. Legal documents
+    authored/approved by an admin use SET_NULL and are intentionally retained.
+    """
+    locked_user = User.objects.select_for_update().get(pk=user.pk)
+    locked_user.delete()

@@ -13,7 +13,6 @@ import {
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   formatShortDate,
@@ -106,11 +105,7 @@ function CycleSummaryCard({
   onSymptomsPress,
   onSexPress,
 }: CycleSummaryCardProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const periodTiming =
     summary.daysUntilNextPeriod === 0

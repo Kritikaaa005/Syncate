@@ -6,7 +6,6 @@ import {
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getGreeting } from "@/utils/cycleCalculations";
 
@@ -21,11 +20,7 @@ function DashboardHeader({
   onNotificationsPress,
   hasUnreadNotifications = false,
 }: DashboardHeaderProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <View style={styles.container}>

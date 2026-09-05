@@ -5,11 +5,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function PredictionTip() {
-  const { isDark } = useTheme();
-  const accent = isDark ? "#FF7CA3" : "#F2386A";
+  const { isDark, colors } = useTheme();
+  const accent = colors.primary;
 
   return (
-    <View style={[styles.tip, { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" }]}>
+    <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
       <Heart size={16} color={accent} fill={accent} style={styles.icon} />
       <Text style={[styles.text, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
         <Text style={styles.bold}>Tip:</Text> The more accurate your input, the

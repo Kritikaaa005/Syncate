@@ -21,7 +21,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   updateTrackingMode,
@@ -32,6 +31,7 @@ type PreferenceOption = {
   value: TrackingMode;
   title: string;
   description: string;
+  available: boolean;
 };
 
 const LAST_PERIOD_ROUTE =
@@ -43,21 +43,19 @@ const preferenceOptions: PreferenceOption[] = [
     title: "Period Tracking",
     description:
       "Track your cycle, periods, symptoms and fertile days.",
+    available: true,
   },
   {
     value: "pregnancy",
-    title: "Pregnancy Tracking",
+    title: "Pregnancy Tracking — Coming soon",
     description:
       "Follow your pregnancy journey and weekly progress.",
+    available: false,
   },
 ];
 
 function PreferenceScreen() {
-  const { isDark, toggleDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, toggleDark, colors: theme } = useTheme();
 
   const params = useLocalSearchParams<{
     nickname?: string | string[];
@@ -79,7 +77,11 @@ function PreferenceScreen() {
     useState("");
 
   const handleSelect = (mode: TrackingMode) => {
-    if (isSubmitting) return;
+    const option = preferenceOptions.find(
+      (item) => item.value === mode
+    );
+
+    if (isSubmitting || !option?.available) return;
 
     setSelectedMode(mode);
     setErrorMessage("");
@@ -264,12 +266,15 @@ const handleContinue = async () => {
                   onPress={() =>
                     handleSelect(option.value)
                   }
-                  disabled={isSubmitting}
+                  disabled={
+                    isSubmitting || !option.available
+                  }
                   accessibilityRole="radio"
                   accessibilityLabel={option.title}
                   accessibilityState={{
                     selected: isSelected,
-                    disabled: isSubmitting,
+                    disabled:
+                      isSubmitting || !option.available,
                   }}
                   style={({ pressed }) => [
                     styles.optionCard,
@@ -286,6 +291,8 @@ const handleContinue = async () => {
                     },
                     isSelected &&
                       styles.optionCardSelected,
+                    !option.available &&
+                      styles.optionCardDisabled,
                     pressed &&
                       !isSubmitting &&
                       styles.optionCardPressed,
@@ -529,6 +536,10 @@ const styles = StyleSheet.create({
 
   optionCardPressed: {
     transform: [{ scale: 0.985 }],
+  },
+
+  optionCardDisabled: {
+    opacity: 0.62,
   },
 
   iconContainer: {

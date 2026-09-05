@@ -40,15 +40,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MiniCalendar from "@/components/guest/prediction/MiniCalendar";
+import { useTheme } from "@/contexts/ThemeContext";
 import { formatDisplayDate, toDateValue } from "@/utils/calendarUtils";
-
-/**
- * Brand colors:
- * PINK        #F2386A  - light mode accent
- * PINK_BTN    #F4467A  - light mode solid buttons
- * PINK_DARK   #FF7CA3  - dark mode accent (lighter/softer)
- * PINK_BTN_D  #FF6F98  - dark mode solid buttons
- */
 
 const CYCLE_TYPES = [
   { id: "short", label: "Short", description: "Less than 24 days" },
@@ -57,7 +50,7 @@ const CYCLE_TYPES = [
 ];
 
 export default function LogYourPeriod() {
-  const [isDark, setIsDark] = useState(false);
+  const { isDark, toggleDark, colors } = useTheme();
   const [lastPeriodDate, setLastPeriodDate] = useState(toDateValue(new Date()));
   const [cycleType, setCycleType] = useState("short");
   const [periodDuration, setPeriodDuration] = useState(5);
@@ -80,8 +73,8 @@ export default function LogYourPeriod() {
     });
   };
 
-  const pink = isDark ? "#FF7CA3" : "#F2386A";
-  const pinkBtn = isDark ? "#FF6F98" : "#F4467A";
+  const pink = colors.primary;
+  const pinkBtn = colors.primaryButton;
   const bg = isDark ? "#17111C" : "#FFFFFF";
 
   return (
@@ -97,7 +90,7 @@ export default function LogYourPeriod() {
               accessibilityLabel="Go back"
               style={({ pressed }) => [
                 styles.iconButton,
-                { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" },
+                { backgroundColor: colors.primarySoft },
                 pressed && styles.pressedScale,
               ]}
             >
@@ -105,15 +98,15 @@ export default function LogYourPeriod() {
             </Pressable>
 
             <Pressable
-              onPress={() => setIsDark((prev) => !prev)}
+              onPress={toggleDark}
               accessibilityLabel="Toggle dark mode"
               style={({ pressed }) => [
                 styles.iconButtonOutlined,
-                { borderColor: isDark ? "#FFFFFF" : "#F4467A" },
+                { borderColor: isDark ? "#FFFFFF" : colors.primary },
                 pressed && styles.pressedScale,
               ]}
             >
-              {isDark ? <Sun size={18} color="#FFFFFF" /> : <Moon size={18} color="#F2386A" />}
+              {isDark ? <Sun size={18} color="#FFFFFF" /> : <Moon size={18} color={colors.primary} />}
             </Pressable>
           </View>
 
@@ -198,16 +191,12 @@ export default function LogYourPeriod() {
                       styles.cycleTypeButton,
                       {
                         borderColor: isSelected
-                          ? isDark
-                            ? "#FF7CA3"
-                            : "#F2386A"
+                          ? colors.primary
                           : isDark
                           ? "#3A2A38"
                           : "#E8EEF8",
                         backgroundColor: isSelected
-                          ? isDark
-                            ? "#3A2430"
-                            : "#FCE7EF"
+                          ? colors.primarySoft
                           : isDark
                           ? "#221A28"
                           : "#FFFFFF",
@@ -217,7 +206,7 @@ export default function LogYourPeriod() {
                     <View
                       style={[
                         styles.cycleTypeIcon,
-                        { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" },
+                        { backgroundColor: colors.primarySoft },
                       ]}
                     >
                       <Timer size={20} color={pink} />
@@ -299,7 +288,7 @@ export default function LogYourPeriod() {
               The number of days your period usually lasts.
             </Text>
 
-            <View style={[styles.tip, { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" }]}>
+            <View style={[styles.tip, { backgroundColor: colors.primarySoft }]}>
               <Heart size={16} color={pink} style={styles.tipIcon} />
               <Text style={[styles.tipText, { color: isDark ? "#F3EDF1" : "#1E1730" }]}>
                 <Text style={styles.tipBold}>Tip:</Text> The more accurate your
@@ -312,7 +301,7 @@ export default function LogYourPeriod() {
             onPress={handleCalculate}
             style={({ pressed }) => [
               styles.calculateButton,
-              { backgroundColor: pinkBtn },
+              { backgroundColor: pinkBtn, shadowColor: colors.shadow },
               pressed && styles.pressedScale,
             ]}
           >
@@ -525,7 +514,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 20,
     paddingVertical: 16,
-    shadowColor: "#F4467A",
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.32,
     shadowRadius: 32,

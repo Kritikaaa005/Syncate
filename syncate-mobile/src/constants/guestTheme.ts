@@ -1,4 +1,4 @@
-// Destination: constants/guestTheme.ts
+import { accentThemes, type AccentTheme } from "./accentThemes";
 
 export type GuestThemeColors = {
   background: string;
@@ -6,6 +6,8 @@ export type GuestThemeColors = {
   border: string;
 
   primary: string;
+  secondary: string;
+  soft: string;
   primarySoft: string;
   primaryButton: string;
 
@@ -31,18 +33,20 @@ export const guestTheme: {
       card: "#FFFFFF",
       border: "#E8EEF8",
 
-      primary: "#F2386A",
-      primarySoft: "#FCE7EF",
-      primaryButton: "#F4467A",
+      primary: accentThemes.blush.primary,
+      secondary: accentThemes.blush.secondary,
+      soft: accentThemes.blush.soft,
+      primarySoft: accentThemes.blush.soft,
+      primaryButton: accentThemes.blush.primary,
 
       text: "#1E1730",
       muted: "#8D8A99",
 
       inputBackground: "#FFFFFF",
-      inputBorder: "#F6B7CA",
+      inputBorder: accentThemes.blush.secondary,
 
-      sparkle: "#F7A1BB",
-      shadow: "#F4467A",
+      sparkle: accentThemes.blush.secondary,
+      shadow: accentThemes.blush.primary,
     },
 
     dark: {
@@ -50,18 +54,39 @@ export const guestTheme: {
       card: "#221A28",
       border: "#3A2A38",
 
-      primary: "#FF7CA3",
-      primarySoft: "#3A2430",
-      primaryButton: "#FF6F98",
+      primary: accentThemes.blush.primary,
+      secondary: accentThemes.blush.secondary,
+      soft: `${accentThemes.blush.primary}33`,
+      primarySoft: `${accentThemes.blush.primary}33`,
+      primaryButton: accentThemes.blush.primary,
 
       text: "#F3EDF1",
       muted: "#B7ACB8",
 
       inputBackground: "#211923",
-      inputBorder: "#754257",
+      inputBorder: `${accentThemes.blush.primary}99`,
 
-      sparkle: "#FF7CA3",
-      shadow: "#FF7CA3",
+      sparkle: accentThemes.blush.secondary,
+      shadow: accentThemes.blush.primary,
     },
   },
 };
+
+export function resolveGuestTheme(
+  accent: AccentTheme,
+  isDark: boolean
+): GuestThemeColors {
+  const neutrals = guestTheme.mode[isDark ? "dark" : "light"];
+
+  return {
+    ...neutrals,
+    primary: accent.primary,
+    secondary: accent.secondary,
+    soft: isDark ? `${accent.primary}33` : accent.soft,
+    primarySoft: isDark ? `${accent.primary}33` : accent.soft,
+    primaryButton: accent.primary,
+    inputBorder: isDark ? `${accent.primary}99` : accent.secondary,
+    sparkle: accent.secondary,
+    shadow: accent.primary,
+  };
+}

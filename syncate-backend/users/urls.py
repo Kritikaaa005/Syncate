@@ -20,6 +20,10 @@ from rest_framework_simplejwt.views import (
 )
 
 from .views import (
+    DeactivateAccountView,
+    PermanentDeleteAccountView,
+    RestoreScheduledAccountView,
+    ScheduleAccountDeletionView,
     LoginView,
     UpdateNicknameView,
     UpdateTrackingModeView,
@@ -29,6 +33,21 @@ from .views import (
 
 # Included under /api/users/
 urlpatterns = [
+    path(
+        "me/account/",
+        DeactivateAccountView.as_view(),
+        name="deactivate-account",
+    ),
+    path(
+        "me/account/schedule-deletion/",
+        ScheduleAccountDeletionView.as_view(),
+        name="schedule-account-deletion",
+    ),
+    path(
+        "me/account/permanent/",
+        PermanentDeleteAccountView.as_view(),
+        name="permanent-delete-account",
+    ),
     path(
         "me/nickname/",
         UpdateNicknameView.as_view(),
@@ -44,6 +63,11 @@ urlpatterns = [
 
 # Included under /api/auth/
 auth_api_urlpatterns = [
+    path(
+        "restore-account/",
+        RestoreScheduledAccountView.as_view(),
+        name="restore-scheduled-account",
+    ),
     path(
         "login/",
         LoginView.as_view(),

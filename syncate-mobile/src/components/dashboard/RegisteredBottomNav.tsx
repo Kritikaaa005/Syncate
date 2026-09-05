@@ -17,7 +17,6 @@ import {
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type BottomNavItem =
@@ -37,14 +36,12 @@ const DASHBOARD_ROUTE =
 const CALENDAR_ROUTE =
   "/dashboard/calendar" as Href;
 
+const PROFILE_ROUTE = "/profile" as Href;
+
 function RegisteredBottomNav({
   activeItem = "home",
 }: RegisteredBottomNavProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   const getItemColor = (
     item: BottomNavItem
@@ -202,7 +199,7 @@ function RegisteredBottomNav({
 
       <Pressable
         onPress={() =>
-          showComingSoon("Profile")
+          router.push(PROFILE_ROUTE)
         }
         style={styles.navItem}
         accessibilityRole="button"

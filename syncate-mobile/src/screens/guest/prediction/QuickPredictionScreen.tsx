@@ -26,14 +26,12 @@ import PredictionHeader from "@/components/guest/prediction/PredictionHeader";
 import PredictionHero from "@/components/guest/prediction/PredictionHero";
 import PredictionTip from "@/components/guest/prediction/PredictionTip";
 import { CYCLE_TYPES } from "@/constants/predictionData";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { formatDisplayDate } from "@/utils/calendarUtils";
 import { calculateCyclePrediction } from "@/utils/predictUtils";
 
 export default function QuickPrediction() {
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { isDark, colors, colors: t } = useTheme();
 
   const [lastPeriodDate, setLastPeriodDate] = useState("2025-05-20");
   const [cycleType, setCycleType] = useState("short");
@@ -103,12 +101,12 @@ export default function QuickPrediction() {
                   style={[
                     styles.dateField,
                     {
-                      borderColor: isDark ? "rgba(255,124,163,0.6)" : "rgba(242,56,106,0.5)",
+                      borderColor: `${colors.primary}${isDark ? "99" : "80"}`,
                       backgroundColor: isDark ? "#221A28" : "#FFFFFF",
                     },
                   ]}
                 >
-                  <Calendar size={18} color={isDark ? "#FF7CA3" : "#F2386A"} />
+                  <Calendar size={18} color={colors.primary} />
 
                   <Text
                     style={[
@@ -124,7 +122,7 @@ export default function QuickPrediction() {
                       transform: [{ rotate: isCalendarOpen ? "180deg" : "0deg" }],
                     }}
                   >
-                    <ChevronDown size={16} color={isDark ? "#FF7CA3" : "#F2386A"} />
+                    <ChevronDown size={16} color={colors.primary} />
                   </View>
                 </Pressable>
 
@@ -165,16 +163,12 @@ export default function QuickPrediction() {
                         styles.cycleTypeButton,
                         {
                           borderColor: selected
-                            ? isDark
-                              ? "#FF7CA3"
-                              : "#F2386A"
+                            ? colors.primary
                             : isDark
                             ? "#3A2A38"
                             : "#E8EEF8",
                           backgroundColor: selected
-                            ? isDark
-                              ? "#3A2430"
-                              : "#FCE7EF"
+                            ? colors.primarySoft
                             : isDark
                             ? "#221A28"
                             : "#FFFFFF",
@@ -184,10 +178,10 @@ export default function QuickPrediction() {
                       <View
                         style={[
                           styles.cycleTypeIcon,
-                          { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" },
+                          { backgroundColor: colors.primarySoft },
                         ]}
                       >
-                        <Timer size={14} color={isDark ? "#FF7CA3" : "#F2386A"} />
+                        <Timer size={14} color={colors.primary} />
                       </View>
 
                       <View style={styles.cycleTypeLabelRow}>
@@ -203,7 +197,7 @@ export default function QuickPrediction() {
                           <View
                             style={[
                               styles.checkBubble,
-                              { backgroundColor: isDark ? "#FF6F98" : "#F4467A" },
+                              { backgroundColor: colors.primaryButton },
                             ]}
                           >
                             <Check size={9} color="#FFFFFF" strokeWidth={3} />
@@ -243,7 +237,7 @@ export default function QuickPrediction() {
                   onPress={decrementDuration}
                   accessibilityLabel="Decrease period duration"
                 >
-                  <Minus size={20} color={isDark ? "#FF7CA3" : "#F2386A"} />
+                  <Minus size={20} color={colors.primary} />
                 </Pressable>
 
                 <View style={styles.durationValueRow}>
@@ -266,7 +260,7 @@ export default function QuickPrediction() {
                   onPress={incrementDuration}
                   accessibilityLabel="Increase period duration"
                 >
-                  <Plus size={20} color={isDark ? "#FF7CA3" : "#F2386A"} />
+                  <Plus size={20} color={colors.primary} />
                 </Pressable>
               </View>
 

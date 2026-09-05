@@ -6,7 +6,6 @@ import {
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type DashboardLoadingProps = {
@@ -16,11 +15,7 @@ type DashboardLoadingProps = {
 function DashboardLoading({
   message = "Loading your dashboard...",
 }: DashboardLoadingProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <View
@@ -60,11 +55,7 @@ function DashboardError({
   message,
   onRetry,
 }: DashboardErrorProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <View

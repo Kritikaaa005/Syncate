@@ -10,12 +10,10 @@ import { ArrowLeft, Clock, User, Users } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function YourselfOrPartnerScreen() {
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { isDark, colors: t } = useTheme();
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: t.background }]}>
