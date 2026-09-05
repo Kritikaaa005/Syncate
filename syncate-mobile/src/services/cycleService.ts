@@ -1,6 +1,11 @@
 import {
   authenticatedFetch,
 } from "@/utils/authenticatedFetch";
+import {
+  insertPeriodRecord,
+  markPeriodRecordAsSynced,
+} from "@/database/periodRepository";
+import { getCurrentUserId } from "@/utils/currentUser";
 
 const LAST_PERIOD_ENDPOINT =
   "/cycle/me/last-period/";
@@ -164,7 +169,7 @@ export async function getLastPeriod():
   );
 }
 
-export async function saveLastPeriod(
+export async function updateLastPeriodOnServer(
   payload: SaveLastPeriodPayload
 ): Promise<LastPeriodResponse> {
   const response =
@@ -186,4 +191,26 @@ export async function saveLastPeriod(
     response,
     "Could not save your period information."
   );
+}
+
+async function updateLastPeriodWithImmediateRetry(
+  payload: SaveLastPeriodPayload
+): Promise<LastPeriodResponse> {
+  try {
+    return await updateLastPeriodOnServer(payload);
+  } catch {
+    return updateLastPeriodOnServer(payload);
+  }
+}
+
+export async function saveLastPeriod(
+  payload: SaveLastPeriodPayload
+): Promise<LastPeriodResponse> {
+  const userId = await getCurrentUserId();
+  const localRecordId = await insertPeriodRecord(userId, payload);
+  const serverResult = await updateLastPeriodWithImmediateRetry(payload);
+
+  await markPeriodRecordAsSynced(localRecordId, userId);
+
+  return serverResult;
 }
