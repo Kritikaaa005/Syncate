@@ -9,7 +9,7 @@ type GuestActionCardProps = {
 };
 
 function GuestActionCard({ action }: GuestActionCardProps) {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
   const Icon = action.icon;
 
   return (
@@ -29,11 +29,11 @@ function GuestActionCard({ action }: GuestActionCardProps) {
         style={[
           styles.iconCircle,
           {
-            backgroundColor: isDark ? "#3A2430" : "#FCE7EF",
+            backgroundColor: colors.primarySoft,
           },
         ]}
       >
-        <Icon size={23} color={isDark ? "#FF7CA3" : "#F2386A"} />
+        <Icon size={23} color={colors.primary} />
       </View>
 
       <Text
@@ -51,7 +51,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
         style={[
           styles.divider,
           {
-            backgroundColor: isDark ? "#FF7CA3" : "#F2386A",
+            backgroundColor: colors.primary,
           },
         ]}
       />
@@ -71,7 +71,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
         style={[
           styles.button,
           {
-            backgroundColor: isDark ? "#FF6F98" : "#F4467A",
+            backgroundColor: colors.primaryButton,
           },
         ]}
       >

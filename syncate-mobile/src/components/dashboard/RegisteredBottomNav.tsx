@@ -10,13 +10,13 @@ import {
   router,
 } from "expo-router";
 import {
+  Alert,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type BottomNavItem =
@@ -36,20 +36,12 @@ const DASHBOARD_ROUTE =
 const CALENDAR_ROUTE =
   "/dashboard/calendar" as Href;
 
-const INSIGHTS_ROUTE =
-  "/dashboard/insights" as Href;
-
-const PROFILE_ROUTE =
-  "/dashboard/profile" as Href;
+const PROFILE_ROUTE = "/profile" as Href;
 
 function RegisteredBottomNav({
   activeItem = "home",
 }: RegisteredBottomNavProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   const getItemColor = (
     item: BottomNavItem
@@ -57,6 +49,15 @@ function RegisteredBottomNav({
     activeItem === item
       ? theme.primary
       : theme.muted;
+
+  const showComingSoon = (
+    feature: string
+  ) => {
+    Alert.alert(
+      "Coming soon",
+      `${feature} will be added later.`
+    );
+  };
 
   return (
     <View
@@ -167,7 +168,7 @@ function RegisteredBottomNav({
 
       <Pressable
         onPress={() =>
-          router.push(INSIGHTS_ROUTE)
+          showComingSoon("Insights")
         }
         style={styles.navItem}
         accessibilityRole="button"

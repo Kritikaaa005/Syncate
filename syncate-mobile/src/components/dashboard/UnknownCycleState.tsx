@@ -19,7 +19,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 import DashboardHeader from "./DashboardHeader";
@@ -95,11 +94,7 @@ function QuickAction({
 function UnknownCycleState({
   nickname,
 }: UnknownCycleStateProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const openPeriodLogger = () => {
     router.push(LAST_PERIOD_ROUTE);

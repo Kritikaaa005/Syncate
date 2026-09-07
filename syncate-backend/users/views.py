@@ -5,10 +5,13 @@ This module contains:
 
 - Reading the signed-in user's profile summary
 - Adding an optional recovery email after registration
+- Adding or changing an account password
 - Updating a user's nickname
-- Updating a user's tracking preference
+- Reading and updating a user's tracking preference
 - Confirming an email-verification link
 - Logging in with a verified email and password
+- Partner Sync code generation, validation, and registration
+- Account deactivation, scheduled deletion, restoration, and permanent deletion
 
 Account creation itself belongs to the registration app.
 """
@@ -19,6 +22,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.shortcuts import render
+from django.utils import timezone
 from django.views import View
 
 from rest_framework import status
@@ -29,29 +33,31 @@ from rest_framework.permissions import (
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import (
-    RefreshToken,
-)
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import UserProfile
 from .serializers import (
     AddEmailSerializer,
     NicknameSerializer,
+    PartnerCodeSerializer,
+    PartnerRegistrationSerializer,
     SetPasswordSerializer,
     TrackingModeSerializer,
     UserProfileReadSerializer,
-    PartnerCodeSerializer,
-PartnerRegistrationSerializer,
 )
 from .services import (
-    consume_email_verification_token,
-    issue_email_verification_token,
-    send_verification_email,
     InvalidPartnerCodeError,
-PartnerAlreadyLinkedError,
-get_valid_partner_relationship,
-issue_partner_code,
-link_new_partner,
+    PartnerAlreadyLinkedError,
+    consume_email_verification_token,
+    deactivate_account,
+    get_valid_partner_relationship,
+    issue_email_verification_token,
+    issue_partner_code,
+    link_new_partner,
+    permanently_delete_user,
+    restore_scheduled_account,
+    schedule_account_deletion,
+    send_verification_email,
 )
 
 
@@ -62,9 +68,7 @@ class MyProfileView(APIView):
     """
     GET /api/users/me/profile/
 
-    Small read-only profile payload for the mobile Profile screen. Keeping
-    this endpoint focused means the client does not need to infer nickname
-    from cycle endpoints or keep registration response data around forever.
+    Return the signed-in user's profile information.
     """
 
     permission_classes = [IsAuthenticated]
@@ -86,11 +90,8 @@ class AddEmailView(APIView):
     """
     PATCH /api/users/me/email/
 
-    Adds the optional account email after registration and sends the same
-    verification link used by registration. Re-submitting the same
-    unverified email intentionally acts as a resend; a verified email is not
-    changeable here because changing an established recovery identity needs a
-    dedicated security flow later.
+    Add an optional recovery email after registration or resend
+    verification for the same unverified email.
     """
 
     permission_classes = [IsAuthenticated]
@@ -102,20 +103,28 @@ class AddEmailView(APIView):
             data=request.data,
             context={"request": request},
         )
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         email = serializer.validated_data["email"]
         user = request.user
+
         profile, _ = UserProfile.objects.get_or_create(
             user=user,
         )
-        current_email = (user.email or "").strip().lower()
+
+        current_email = (
+            user.email or ""
+        ).strip().lower()
 
         if current_email != email:
             try:
                 with transaction.atomic():
                     user.email = email
-                    user.save(update_fields=["email"])
+                    user.save(
+                        update_fields=["email"]
+                    )
 
                     profile.is_email_verified = False
                     profile.save(
@@ -129,45 +138,58 @@ class AddEmailView(APIView):
                         user,
                         email,
                     )
+
             except IntegrityError:
                 return Response(
                     {
                         "email": [
-                            "An account with this email already exists."
+                            (
+                                "An account with this "
+                                "email already exists."
+                            )
                         ]
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
         else:
             token = issue_email_verification_token(
                 user,
                 email,
             )
 
-        # Same existing design as registration: the account/email update is
-        # authoritative even if the configured mail provider has a temporary
-        # failure. The client receives an explicit flag instead of pretending
-        # a verification email definitely went out.
         verification_sent = True
+
         try:
             send_verification_email(token)
+
         except Exception:
             verification_sent = False
+
             logger.exception(
-                "Failed to send profile email verification for user_id=%s",
+                (
+                    "Failed to send profile email "
+                    "verification for user_id=%s"
+                ),
                 user.id,
             )
 
         return Response(
             {
                 "email": user.email,
-                "is_email_verified": profile.is_email_verified,
-                "email_verification_sent": verification_sent,
+                "is_email_verified": (
+                    profile.is_email_verified
+                ),
+                "email_verification_sent": (
+                    verification_sent
+                ),
                 "message": (
                     "Verification email sent."
                     if verification_sent
                     else (
-                        "Email saved, but the verification email could not be sent right now."
+                        "Email saved, but the "
+                        "verification email could not "
+                        "be sent right now."
                     )
                 ),
             },
@@ -179,22 +201,8 @@ class SetPasswordView(APIView):
     """
     PATCH /api/users/me/password/
 
-    Adds a password to a passwordless account, or changes an existing
-    one — same endpoint, same request shape either way:
-    { "current_password"?: "...", "new_password": "...", "confirm_password": "..." }
-
-    Whether current_password is actually required is decided entirely
-    by SetPasswordSerializer from the account's real password state
-    (see its docstring) — never by whatever the client happens to send.
-
-    NOTE for whoever picks up the security audit (roadmap item #3):
-    this intentionally does NOT blacklist the user's other outstanding
-    refresh tokens after a change. That's a real "sign out everywhere"
-    security property worth having, just not implemented yet — doing
-    it half-right here (e.g. guessing which token is "this device's")
-    would be worse than flagging it and doing it properly once the
-    login/session-recovery flow (roadmap item #25) exists to handle a
-    device gracefully discovering it's been signed out.
+    Add a password to a passwordless account or change an existing
+    password.
     """
 
     permission_classes = [IsAuthenticated]
@@ -202,25 +210,38 @@ class SetPasswordView(APIView):
     throttle_scope = "password-change"
 
     def patch(self, request):
-        had_password_before = request.user.has_usable_password()
+        had_password_before = (
+            request.user.has_usable_password()
+        )
 
         serializer = SetPasswordSerializer(
             data=request.data,
             context={"request": request},
         )
-        serializer.is_valid(raise_exception=True)
+
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         request.user.set_password(
-            serializer.validated_data["new_password"]
+            serializer.validated_data[
+                "new_password"
+            ]
         )
-        request.user.save(update_fields=["password"])
+
+        request.user.save(
+            update_fields=["password"]
+        )
 
         return Response(
             {
                 "message": (
                     "Password added to your account."
                     if not had_password_before
-                    else "Password changed successfully."
+                    else (
+                        "Password changed "
+                        "successfully."
+                    )
                 ),
             },
             status=status.HTTP_200_OK,
@@ -272,12 +293,33 @@ class UpdateNicknameView(APIView):
 
 class UpdateTrackingModeView(APIView):
     """
-    PATCH /api/users/me/tracking-mode/
+    GET or PATCH /api/users/me/tracking-mode/
     """
 
-    permission_classes = [
-        IsAuthenticated,
-    ]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = (
+            UserProfile.objects.get_or_create(
+                user=request.user,
+            )
+        )
+
+        return Response(
+            {
+                "profile_id": profile.profile_id,
+                "nickname": profile.nickname,
+                "tracking_mode": (
+                    profile.tracking_mode
+                ),
+                "tracking_mode_label": (
+                    profile.get_tracking_mode_display()
+                    if profile.tracking_mode
+                    else ""
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def patch(self, request):
         profile, _ = (
@@ -321,6 +363,159 @@ class UpdateTrackingModeView(APIView):
         )
 
 
+class DeactivateAccountView(APIView):
+    """
+    DELETE /api/users/me/account/
+
+    Immediately deactivate an account without scheduling permanent
+    deletion.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        deactivate_account(
+            request.user
+        )
+
+        return Response(
+            {
+                "detail": (
+                    "Account deactivated "
+                    "successfully."
+                ),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ScheduleAccountDeletionView(APIView):
+    """
+    POST /api/users/me/account/schedule-deletion/
+
+    Disable the account immediately and schedule permanent deletion
+    after the grace period.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        due_at = schedule_account_deletion(
+            request.user
+        )
+
+        return Response(
+            {
+                "detail": (
+                    "Account scheduled for deletion."
+                ),
+                "deletion_due_at": due_at,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PermanentDeleteAccountView(APIView):
+    """
+    DELETE /api/users/me/account/permanent/
+
+    Permanently delete the signed-in account immediately.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request):
+        permanently_delete_user(
+            request.user
+        )
+
+        return Response(
+            status=status.HTTP_204_NO_CONTENT
+        )
+
+
+class RestoreScheduledAccountView(APIView):
+    """
+    POST /api/auth/restore-account/
+
+    Restore an account that is still within its deletion grace period.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = (
+            request.data.get("email") or ""
+        ).strip().lower()
+
+        password = (
+            request.data.get("password") or ""
+        )
+
+        try:
+            user = (
+                User.objects
+                .select_related("profile")
+                .get(email__iexact=email)
+            )
+
+        except (
+            User.DoesNotExist,
+            User.MultipleObjectsReturned,
+        ):
+            user = None
+
+        if (
+            not user
+            or not user.check_password(password)
+        ):
+            return Response(
+                {
+                    "detail": (
+                        "Incorrect email or password."
+                    ),
+                },
+                status=(
+                    status.HTTP_401_UNAUTHORIZED
+                ),
+            )
+
+        try:
+            user = restore_scheduled_account(
+                user
+            )
+
+        except ValueError:
+            return Response(
+                {
+                    "detail": (
+                        "This account can no longer "
+                        "be restored."
+                    ),
+                },
+                status=(
+                    status.HTTP_403_FORBIDDEN
+                ),
+            )
+
+        refresh = RefreshToken.for_user(
+            user
+        )
+
+        return Response(
+            {
+                "detail": (
+                    "Account restored successfully."
+                ),
+                "access": str(
+                    refresh.access_token
+                ),
+                "refresh": str(refresh),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class VerifyEmailConfirmView(View):
     """
     Browser page opened from an email-verification link.
@@ -339,7 +534,9 @@ class VerifyEmailConfirmView(View):
             request,
             "users/verification_result.html",
             {
-                "success": result is not None,
+                "success": (
+                    result is not None
+                ),
             },
         )
 
@@ -355,13 +552,16 @@ class LoginView(APIView):
         "email": "user@example.com",
         "password": "password"
     }
+
+    Accounts that are scheduled for deletion receive a special response
+    so the mobile application can offer account restoration.
     """
 
-    permission_classes = [
-        AllowAny,
-    ]
+    permission_classes = [AllowAny]
 
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [
+        ScopedRateThrottle
+    ]
     throttle_scope = "login"
 
     def post(self, request):
@@ -388,33 +588,32 @@ class LoginView(APIView):
                 ),
             )
 
+        # Do NOT filter by is_active here.
+        #
+        # Scheduled-for-deletion accounts are deliberately inactive,
+        # but we still need to find them so the client can offer the
+        # restore-account flow.
         try:
             user_record = User.objects.get(
                 email__iexact=email,
-                is_active=True,
             )
 
-            username = user_record.username
         except User.DoesNotExist:
-            username = None
+            user_record = None
+
         except User.MultipleObjectsReturned:
-            username = None
+            user_record = None
 
-        user = None
-
-        if username:
-            user = authenticate(
-                request=request,
-                username=username,
-                password=password,
+        if (
+            not user_record
+            or not user_record.check_password(
+                password
             )
-
-        if user is None:
+        ):
             return Response(
                 {
                     "detail": (
-                        "Incorrect email or "
-                        "password."
+                        "Incorrect email or password."
                     ),
                 },
                 status=(
@@ -424,9 +623,59 @@ class LoginView(APIView):
 
         profile, _ = (
             UserProfile.objects.get_or_create(
-                user=user,
+                user=user_record,
             )
         )
+
+        # An account inside the deletion grace period needs to be
+        # distinguished from an ordinary invalid/inactive account.
+        if (
+            profile.deletion_due_at
+            and (
+                profile.deletion_due_at
+                > timezone.now()
+            )
+        ):
+            return Response(
+                {
+                    "code": (
+                        "ACCOUNT_SCHEDULED_FOR_DELETION"
+                    ),
+                    "detail": (
+                        "This account is scheduled "
+                        "for deletion."
+                    ),
+                    "deletion_due_at": (
+                        profile.deletion_due_at
+                    ),
+                },
+                status=(
+                    status.HTTP_403_FORBIDDEN
+                ),
+            )
+
+        user = None
+
+        if user_record.is_active:
+            user = authenticate(
+                request=request,
+                username=(
+                    user_record.username
+                ),
+                password=password,
+            )
+
+        if user is None:
+            return Response(
+                {
+                    "detail": (
+                        "Incorrect email or password."
+                    ),
+                },
+                status=(
+                    status.HTTP_401_UNAUTHORIZED
+                ),
+            )
 
         if profile.is_deleted:
             return Response(
@@ -486,66 +735,125 @@ class LoginView(APIView):
         )
 
 
-
 class PartnerCodeView(APIView):
+    """
+    Generate a partner code for the signed-in primary user.
+    """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         try:
-            relationship = issue_partner_code(request.user)
+            relationship = issue_partner_code(
+                request.user
+            )
+
         except PartnerAlreadyLinkedError as exc:
             return Response(
-                {"detail": str(exc)},
-                status=status.HTTP_409_CONFLICT,
+                {
+                    "detail": str(exc),
+                },
+                status=(
+                    status.HTTP_409_CONFLICT
+                ),
             )
 
         return Response(
             {
                 "code": relationship.code,
-                "expires_at": relationship.expiration_date,
-                "counter": relationship.counter,
+                "expires_at": (
+                    relationship.expiration_date
+                ),
+                "counter": (
+                    relationship.counter
+                ),
             },
             status=status.HTTP_200_OK,
         )
 
 
 class ValidatePartnerCodeView(APIView):
+    """
+    Validate a partner code before partner registration.
+    """
+
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "partner-code-validation"
+
+    throttle_classes = [
+        ScopedRateThrottle
+    ]
+    throttle_scope = (
+        "partner-code-validation"
+    )
 
     def post(self, request):
-        serializer = PartnerCodeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = PartnerCodeSerializer(
+            data=request.data
+        )
 
-        relationship = get_valid_partner_relationship(
-            serializer.validated_data["code"]
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        relationship = (
+            get_valid_partner_relationship(
+                serializer.validated_data[
+                    "code"
+                ]
+            )
         )
 
         if relationship is None:
             return Response(
-                {"detail": "Invalid or expired partner code."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {
+                    "detail": (
+                        "Invalid or expired "
+                        "partner code."
+                    ),
+                },
+                status=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
             )
 
         return Response(
-            {"valid": True},
+            {
+                "valid": True,
+            },
             status=status.HTTP_200_OK,
         )
 
 
 class RegisterPartnerView(APIView):
+    """
+    Register a new user as the partner associated with a valid
+    partner code.
+    """
+
     permission_classes = [AllowAny]
-    throttle_classes = [ScopedRateThrottle]
+
+    throttle_classes = [
+        ScopedRateThrottle
+    ]
     throttle_scope = "partner-registration"
 
     def post(self, request):
-        serializer = PartnerRegistrationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = (
+            PartnerRegistrationSerializer(
+                data=request.data
+            )
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
         data = serializer.validated_data
 
         registration_data = {
-            "date_of_birth": data["date_of_birth"],
+            "date_of_birth": (
+                data["date_of_birth"]
+            ),
             "email": data["email"],
             "password": data["password"],
         }
@@ -556,25 +864,42 @@ class RegisterPartnerView(APIView):
                 registration_data,
                 data["nickname"],
             )
+
         except InvalidPartnerCodeError as exc:
             return Response(
-                {"detail": str(exc)},
-                status=status.HTTP_400_BAD_REQUEST,
+                {
+                    "detail": str(exc),
+                },
+                status=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
             )
 
         partner = relationship.partner
-        refresh = RefreshToken.for_user(partner)
+
+        refresh = RefreshToken.for_user(
+            partner
+        )
 
         return Response(
             {
-                "access": str(refresh.access_token),
+                "access": str(
+                    refresh.access_token
+                ),
                 "refresh": str(refresh),
                 "user": {
                     "id": partner.id,
                     "email": partner.email,
-                    "nickname": partner.profile.nickname,
-                    "is_email_verified": partner.profile.is_email_verified,
-                    "email_verification_sent": bool(partner.email),
+                    "nickname": (
+                        partner.profile.nickname
+                    ),
+                    "is_email_verified": (
+                        partner.profile
+                        .is_email_verified
+                    ),
+                    "email_verification_sent": (
+                        bool(partner.email)
+                    ),
                 },
             },
             status=status.HTTP_201_CREATED,

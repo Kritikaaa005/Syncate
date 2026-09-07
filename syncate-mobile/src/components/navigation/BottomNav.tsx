@@ -5,7 +5,6 @@ import { BarChart2, CalendarDays, Home, Sparkles, User } from "lucide-react-nati
 import type { LucideIcon } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type NavItem = {
@@ -29,8 +28,7 @@ const NAV_ITEMS: NavItem[] = [
 
 function BottomNav() {
   const pathname = usePathname();
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors: t } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -57,7 +55,7 @@ function BottomNav() {
                 style={styles.navItem}
               >
                 <View
-                  style={[styles.predictBubble, { backgroundColor: t.primaryButton }]}
+                  style={[styles.predictBubble, { backgroundColor: t.primaryButton, shadowColor: t.shadow }]}
                 >
                   <Icon size={20} color="#FFFFFF" />
                 </View>
@@ -120,7 +118,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#F4467A",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 20,

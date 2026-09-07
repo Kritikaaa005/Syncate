@@ -13,7 +13,7 @@ from datetime import date
 
 from django.contrib.auth.models import User
 from django.db import models
-
+from django.utils import timezone
 
 class UserProfile(models.Model):
     class TrackingMode(models.TextChoices):
@@ -57,6 +57,27 @@ class UserProfile(models.Model):
 
     onboarding_completed = models.BooleanField(
         default=False,
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether this profile can authenticate and use registered features.",
+    )
+
+    registered_date = models.DateTimeField(
+        default=timezone.now,
+        editable=False,
+        help_text="Date and time this user profile was registered.",
+    )
+
+    deletion_requested_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    deletion_due_at = models.DateTimeField(
+        null=True,
+        blank=True,
     )
 
     is_deleted = models.BooleanField(
@@ -164,8 +185,6 @@ class EmailVerificationToken(models.Model):
 
     @property
     def is_expired(self):
-        from django.utils import timezone
-
         return timezone.now() >= self.expires_at
 
     @property

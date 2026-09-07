@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 // === CHANGED: saveLastPeriod -> logPeriod. This screen always has a
 // real selected date by the time handleSave runs (see the `!selectedDate`
@@ -33,11 +32,7 @@ const DASHBOARD_ROUTE =
   "/dashboard" as Href;
 
 function DashboardCalendarScreen() {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const [
     selectedDate,

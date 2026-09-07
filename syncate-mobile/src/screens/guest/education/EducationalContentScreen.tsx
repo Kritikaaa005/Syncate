@@ -3,13 +3,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import ArticleCard from "@/components/guest/education/ArticleCard";
 import EducationHeader from "@/components/guest/education/EducationHeader";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePublishedArticles } from "@/hooks/usePublishedArticles";
 
 export default function EducationalContent() {
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors: t } = useTheme();
 
   const { articles } = usePublishedArticles();
 

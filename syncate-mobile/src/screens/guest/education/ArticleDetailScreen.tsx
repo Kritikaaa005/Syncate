@@ -1,12 +1,17 @@
 // app/guest/articles/[slug].tsx
 
-import { router, useLocalSearchParams } from "expo-router";
+import {
+  router,
+  useLocalSearchParams,
+} from "expo-router";
+
 import {
   ArrowLeft,
   Clock,
   Sparkles,
   UserRound,
 } from "lucide-react-native";
+
 import {
   ActivityIndicator,
   Image,
@@ -16,35 +21,64 @@ import {
   Text,
   View,
 } from "react-native";
+
 import Markdown from "react-native-markdown-display";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePublishedArticle } from "@/hooks/usePublishedArticle";
 
+
 export default function ArticleDetail() {
-  const params = useLocalSearchParams<{ slug?: string | string[] }>();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const params =
+    useLocalSearchParams<{
+      slug?: string | string[];
+    }>();
 
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const slug = Array.isArray(params.slug)
+    ? params.slug[0]
+    : params.slug;
 
-  const { article, loading, error } = usePublishedArticle(slug);
+  // Use the active ThemeContext colors so this screen responds to
+  // the selected accent theme as well as light/dark mode.
+  const { colors: t } = useTheme();
+
+  const {
+    article,
+    loading,
+    error,
+  } = usePublishedArticle(slug);
+
 
   const goBackToArticles = () => {
     router.back();
   };
 
+
   if (loading) {
     return (
       <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: t.background }]}
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: t.background,
+          },
+        ]}
       >
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={t.primary} />
+          <ActivityIndicator
+            size="large"
+            color={t.primary}
+          />
 
-          <Text style={[styles.loadingText, { color: t.text }]}>
+          <Text
+            style={[
+              styles.loadingText,
+              {
+                color: t.text,
+              },
+            ]}
+          >
             Loading article...
           </Text>
         </View>
@@ -52,28 +86,54 @@ export default function ArticleDetail() {
     );
   }
 
+
   if (error || !article) {
     return (
       <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: t.background }]}
+        style={[
+          styles.safeArea,
+          {
+            backgroundColor: t.background,
+          },
+        ]}
       >
         <View style={styles.errorWrap}>
           <Pressable
             onPress={goBackToArticles}
             style={({ pressed }) => [
               styles.errorBackButton,
-              { backgroundColor: t.primarySoft },
+              {
+                backgroundColor:
+                  t.primarySoft,
+              },
               pressed && styles.pressed,
             ]}
           >
-            <ArrowLeft size={18} color={t.primary} />
+            <ArrowLeft
+              size={18}
+              color={t.primary}
+            />
 
-            <Text style={[styles.errorBackText, { color: t.primary }]}>
+            <Text
+              style={[
+                styles.errorBackText,
+                {
+                  color: t.primary,
+                },
+              ]}
+            >
               Back to articles
             </Text>
           </Pressable>
 
-          <Text style={[styles.errorText, { color: t.text }]}>
+          <Text
+            style={[
+              styles.errorText,
+              {
+                color: t.text,
+              },
+            ]}
+          >
             {error || "Article not found."}
           </Text>
         </View>
@@ -81,30 +141,75 @@ export default function ArticleDetail() {
     );
   }
 
+
   const markdownStyles = {
     body: {
       color: t.text,
       fontSize: 14,
       lineHeight: 26,
     },
-    heading1: { color: t.text, fontSize: 21, fontWeight: "700" as const },
-    heading2: { color: t.text, fontSize: 18, fontWeight: "700" as const },
-    heading3: { color: t.text, fontSize: 16, fontWeight: "600" as const },
-    strong: { fontWeight: "700" as const },
-    bullet_list: { marginBottom: 8 },
-    ordered_list: { marginBottom: 8 },
-    list_item: { marginBottom: 6 },
-    link: { color: t.primary },
-    paragraph: { marginTop: 0, marginBottom: 16 },
+
+    heading1: {
+      color: t.text,
+      fontSize: 21,
+      fontWeight: "700" as const,
+    },
+
+    heading2: {
+      color: t.text,
+      fontSize: 18,
+      fontWeight: "700" as const,
+    },
+
+    heading3: {
+      color: t.text,
+      fontSize: 16,
+      fontWeight: "600" as const,
+    },
+
+    strong: {
+      fontWeight: "700" as const,
+    },
+
+    bullet_list: {
+      marginBottom: 8,
+    },
+
+    ordered_list: {
+      marginBottom: 8,
+    },
+
+    list_item: {
+      marginBottom: 6,
+    },
+
+    link: {
+      color: t.primary,
+    },
+
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 16,
+    },
   };
+
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: t.background }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: t.background,
+        },
+      ]}
     >
       <ScrollView
-        style={{ backgroundColor: t.background }}
-        contentContainerStyle={styles.scrollContent}
+        style={{
+          backgroundColor: t.background,
+        }}
+        contentContainerStyle={
+          styles.scrollContent
+        }
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
@@ -115,33 +220,55 @@ export default function ArticleDetail() {
               accessibilityLabel="Back to articles"
               style={({ pressed }) => [
                 styles.backButton,
-                { backgroundColor: t.primarySoft },
+                {
+                  backgroundColor:
+                    t.primarySoft,
+                },
                 pressed && styles.pressed,
               ]}
             >
-              <ArrowLeft size={20} color={t.primary} />
+              <ArrowLeft
+                size={20}
+                color={t.primary}
+              />
             </Pressable>
 
             <View
               style={[
                 styles.categoryPill,
-                { backgroundColor: t.primarySoft },
+                {
+                  backgroundColor:
+                    t.primarySoft,
+                },
               ]}
             >
-              <Text style={[styles.categoryText, { color: t.primary }]}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  {
+                    color: t.primary,
+                  },
+                ]}
+              >
                 {article.category}
               </Text>
             </View>
           </View>
 
+
           {article.cover_image_url ? (
             <Image
-              source={{ uri: article.cover_image_url }}
+              source={{
+                uri: article.cover_image_url,
+              }}
               style={styles.coverImage}
               resizeMode="cover"
-              accessibilityLabel={article.title}
+              accessibilityLabel={
+                article.title
+              }
             />
           ) : null}
+
 
           <View
             style={[
@@ -155,34 +282,70 @@ export default function ArticleDetail() {
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: t.primarySoft },
+                {
+                  backgroundColor:
+                    t.primarySoft,
+                },
               ]}
             >
-              <Sparkles size={22} color={t.primary} />
+              <Sparkles
+                size={22}
+                color={t.primary}
+              />
             </View>
 
-            <Text style={[styles.title, { color: t.text }]}>
+            <Text
+              style={[
+                styles.title,
+                {
+                  color: t.text,
+                },
+              ]}
+            >
               {article.title}
             </Text>
 
+
             {!!article.author && (
               <View style={styles.authorRow}>
-                <UserRound size={14} color={t.primary} />
+                <UserRound
+                  size={14}
+                  color={t.primary}
+                />
 
-                <Text style={[styles.authorText, { color: t.muted }]}>
+                <Text
+                  style={[
+                    styles.authorText,
+                    {
+                      color: t.muted,
+                    },
+                  ]}
+                >
                   By {article.author}
                 </Text>
               </View>
             )}
 
-            <View style={styles.metaRow}>
-              <Clock size={14} color={t.muted} />
 
-              <Text style={[styles.metaText, { color: t.muted }]}>
+            <View style={styles.metaRow}>
+              <Clock
+                size={14}
+                color={t.muted}
+              />
+
+              <Text
+                style={[
+                  styles.metaText,
+                  {
+                    color: t.muted,
+                  },
+                ]}
+              >
                 Educational article
               </Text>
             </View>
           </View>
+
 
           <View
             style={[
@@ -193,11 +356,20 @@ export default function ArticleDetail() {
               },
             ]}
           >
-            <Text style={[styles.description, { color: t.muted }]}>
+            <Text
+              style={[
+                styles.description,
+                {
+                  color: t.muted,
+                },
+              ]}
+            >
               {article.short_description}
             </Text>
 
-            <Markdown style={markdownStyles}>
+            <Markdown
+              style={markdownStyles}
+            >
               {article.content}
             </Markdown>
           </View>
@@ -206,6 +378,7 @@ export default function ArticleDetail() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -282,7 +455,11 @@ const styles = StyleSheet.create({
 
   pressed: {
     opacity: 0.8,
-    transform: [{ scale: 0.96 }],
+    transform: [
+      {
+        scale: 0.96,
+      },
+    ],
   },
 
   categoryPill: {
@@ -361,5 +538,4 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 28,
   },
-
 });

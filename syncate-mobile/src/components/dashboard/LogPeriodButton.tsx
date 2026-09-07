@@ -4,7 +4,6 @@ import {
   Text,
 } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type LogPeriodButtonProps = {
@@ -16,11 +15,7 @@ function LogPeriodButton({
   onPress,
   disabled = false,
 }: LogPeriodButtonProps) {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <Pressable

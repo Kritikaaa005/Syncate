@@ -291,6 +291,8 @@ export async function logPeriod(
   );
 }
 
+
+
 // === NEW: reads back the cycle-length / period-duration answers.
 // Same shape onboarding writes with updateCyclePreferences — used by
 // ProfilePeriodDetailsScreen.tsx (Settings > Change period details)

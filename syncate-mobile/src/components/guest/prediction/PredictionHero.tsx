@@ -5,12 +5,12 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function PredictionHero() {
-  const { isDark } = useTheme();
+  const { isDark, colors } = useTheme();
 
-  const sparkleStrong = isDark ? "rgba(255,124,163,0.7)" : "rgba(242,56,106,0.6)";
-  const sparkleWeak = isDark ? "rgba(255,124,163,0.5)" : "rgba(242,56,106,0.4)";
-  const sparkleMed = isDark ? "rgba(255,124,163,0.6)" : "rgba(242,56,106,0.5)";
-  const sparkleFaint = isDark ? "rgba(255,124,163,0.4)" : "rgba(242,56,106,0.35)";
+  const sparkleStrong = `${colors.sparkle}${isDark ? "B3" : "99"}`;
+  const sparkleWeak = `${colors.sparkle}${isDark ? "80" : "66"}`;
+  const sparkleMed = `${colors.sparkle}${isDark ? "99" : "80"}`;
+  const sparkleFaint = `${colors.sparkle}${isDark ? "66" : "59"}`;
 
   return (
     <View style={styles.container}>
@@ -33,7 +33,7 @@ function PredictionHero() {
         Quick Prediction
       </Text>
 
-      <Text style={[styles.titleLine2, { color: isDark ? "#FF7CA3" : "#F2386A" }]}>
+      <Text style={[styles.titleLine2, { color: colors.primary }]}>
         Log your period
       </Text>
 

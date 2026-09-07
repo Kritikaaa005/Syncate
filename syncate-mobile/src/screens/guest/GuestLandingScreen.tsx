@@ -6,12 +6,10 @@ import GuestLandingHeader from "@/components/guest/landing/GuestLandingHeader";
 import GuestMoreFeatures from "@/components/guest/landing/GuestMoreFeatures";
 
 import { guestActions } from "@/constants/guestLandingData";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function GuestLanding() {
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors: t } = useTheme();
 
   return (
     <SafeAreaView

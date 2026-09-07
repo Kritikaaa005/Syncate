@@ -18,9 +18,9 @@ export type NicknameResponse = {
 export type TrackingModeResponse = {
   profile_id: number;
   nickname: string;
-  tracking_mode: TrackingMode;
+  tracking_mode: TrackingMode | "";
   tracking_mode_label: string;
-  message: string;
+  message?: string;
 };
 
 function extractErrorMessage(
@@ -230,5 +230,98 @@ export function setAccountPassword(
       new_password: payload.newPassword,
       confirm_password: payload.confirmPassword,
     }
+  );
+}
+
+export async function getTrackingMode(): Promise<TrackingModeResponse> {
+  return authenticatedJson<TrackingModeResponse>(
+    "/users/me/tracking-mode/",
+    {
+      method: "GET",
+    }
+  );
+}
+
+
+export async function deactivateAccount(): Promise<void> {
+  await authenticatedJson<unknown>(
+    "/users/me/account/",
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+
+async function authenticatedAccountRequest(
+  path: string,
+  method: "POST" | "DELETE"
+): Promise<Response> {
+  const controller =
+    new AbortController();
+
+  const timeout = setTimeout(
+    () => controller.abort(),
+    8000
+  );
+
+  try {
+    const response =
+      await authenticatedFetch(
+        path,
+        {
+          method,
+          signal: controller.signal,
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        await getErrorMessage(response)
+      );
+    }
+
+    return response;
+
+  } catch (error) {
+    if (
+      error instanceof Error
+      && error.name === "AbortError"
+    ) {
+      throw new Error(
+        "The request took too long. "
+        + "Please try again."
+      );
+    }
+
+    throw error;
+
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
+export async function scheduleAccountDeletion(): Promise<{
+  deletion_due_at: string;
+}> {
+  const response =
+    await authenticatedAccountRequest(
+      "/users/me/account/schedule-deletion/",
+      "POST"
+    );
+
+  return (
+    await response.json()
+  ) as {
+    deletion_due_at: string;
+  };
+}
+
+
+export async function permanentlyDeleteAccount(): Promise<void> {
+  await authenticatedAccountRequest(
+    "/users/me/account/permanent/",
+    "DELETE"
   );
 }

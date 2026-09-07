@@ -6,8 +6,8 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function PredictionHeader() {
-  const { isDark, toggleDark } = useTheme();
-  const borderColor = isDark ? "#FFFFFF" : "#F4467A";
+  const { isDark, toggleDark, colors } = useTheme();
+  const borderColor = isDark ? "#FFFFFF" : colors.primary;
 
   return (
     <View style={styles.header}>
@@ -21,7 +21,7 @@ function PredictionHeader() {
           pressed && styles.pressedScale,
         ]}
       >
-        <ArrowLeft size={18} color={isDark ? "#FFFFFF" : "#F2386A"} />
+        <ArrowLeft size={18} color={isDark ? "#FFFFFF" : colors.primary} />
       </Pressable>
 
       <Pressable
@@ -34,7 +34,7 @@ function PredictionHeader() {
           pressed && styles.pressedScale,
         ]}
       >
-        {isDark ? <Sun size={18} color="#FFFFFF" /> : <Moon size={18} color="#F2386A" />}
+        {isDark ? <Sun size={18} color="#FFFFFF" /> : <Moon size={18} color={colors.primary} />}
       </Pressable>
     </View>
   );

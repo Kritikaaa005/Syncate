@@ -20,7 +20,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PeriodCalendar from "@/components/onboarding/PeriodCalendar";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 // === CHANGED: saveLastPeriod -> logPeriod. The backend can't store
 // an "unknown" period anymore (no date = nothing to save), so this
@@ -43,11 +42,8 @@ function LastPeriodScreen() {
   const {
     isDark,
     toggleDark,
+    colors: theme,
   } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
 
   const [
     selectedDate,

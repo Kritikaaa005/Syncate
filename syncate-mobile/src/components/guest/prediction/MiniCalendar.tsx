@@ -10,6 +10,7 @@ import {
   toDateValue,
   WEEKDAY_LABELS,
 } from "@/utils/calendarUtils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 type MiniCalendarProps = {
   value: string;
@@ -32,6 +33,7 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
 }
 
 function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCalendarProps) {
+  const { colors } = useTheme();
   const selectedDate = parseDateValue(value);
   const [viewDate, setViewDate] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
@@ -64,19 +66,20 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
     onSelect(toDateValue(today));
   };
 
-  const accent = isDark ? "#FF7CA3" : "#F2386A";
+  const accent = colors.primary;
 
   return (
     <View
       style={[
         styles.container,
+        { shadowColor: colors.shadow },
         {
           borderColor: isDark ? "#3A2A38" : "#E8EEF8",
           backgroundColor: isDark ? "#221A28" : "#FFFFFF",
         },
       ]}
     >
-      <View style={[styles.monthHeader, { backgroundColor: isDark ? "#3A2430" : "#FCE7EF" }]}>
+      <View style={[styles.monthHeader, { backgroundColor: colors.primarySoft }]}>
         {enableYearNav ? (
           <Pressable
             onPress={goPrevYear}
@@ -146,8 +149,8 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
                     style={[
                       styles.dayButton,
                       selected && {
-                        backgroundColor: isDark ? "#FF6F98" : "#F4467A",
-                        shadowColor: isDark ? "#FF6F98" : "#F4467A",
+                        backgroundColor: colors.primaryButton,
+                        shadowColor: colors.primaryButton,
                         shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.4,
                         shadowRadius: 10,
@@ -161,7 +164,7 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
                         selected
                           ? { color: isDark ? "#221A28" : "#FFFFFF", fontWeight: "600" }
                           : disabled || !inMonth
-                          ? { color: isDark ? "#3A2A38" : "#F6D9E3" }
+                          ? { color: isDark ? "#3A2A38" : colors.secondary }
                           : { color: isDark ? "#F3EDF1" : "#1E1730" },
                       ]}
                     >
@@ -208,7 +211,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 1,
     overflow: "hidden",
-    shadowColor: "#F2386A",
     shadowOffset: { width: 0, height: 16 },
     shadowOpacity: 0.18,
     shadowRadius: 36,

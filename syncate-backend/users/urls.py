@@ -30,6 +30,10 @@ from .views import (
     PartnerCodeView,
     RegisterPartnerView,
     ValidatePartnerCodeView,
+    DeactivateAccountView,
+    PermanentDeleteAccountView,
+    RestoreScheduledAccountView,
+    ScheduleAccountDeletionView,
 )
 
 
@@ -61,20 +65,35 @@ urlpatterns = [
         name="update-tracking-mode",
     ),
     path(
-    "partner/code/",
-    PartnerCodeView.as_view(),
-    name="partner-code",
-),
-path(
-    "partner/validate-code/",
-    ValidatePartnerCodeView.as_view(),
-    name="validate-partner-code",
-),
-path(
-    "partner/register/",
-    RegisterPartnerView.as_view(),
-    name="register-partner",
-),
+        "partner/code/",
+        PartnerCodeView.as_view(),
+        name="partner-code",
+    ),
+    path(
+        "partner/validate-code/",
+        ValidatePartnerCodeView.as_view(),
+        name="validate-partner-code",
+    ),
+    path(
+        "partner/register/",
+        RegisterPartnerView.as_view(),
+        name="register-partner",
+    ),
+    path(
+        "me/account/",
+        DeactivateAccountView.as_view(),
+        name="deactivate-account",
+    ),
+    path(
+        "me/account/schedule-deletion/",
+        ScheduleAccountDeletionView.as_view(),
+        name="schedule-account-deletion",
+    ),
+    path(
+        "me/account/permanent/",
+        PermanentDeleteAccountView.as_view(),
+        name="permanent-delete-account",
+    ),
 ]
 
 
@@ -89,6 +108,11 @@ auth_api_urlpatterns = [
         "token/refresh/",
         TokenRefreshView.as_view(),
         name="token-refresh",
+    ),
+    path(
+        "restore-account/",
+        RestoreScheduledAccountView.as_view(),
+        name="restore-scheduled-account",
     ),
 ]
 

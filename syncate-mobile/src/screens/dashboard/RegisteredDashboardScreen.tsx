@@ -17,7 +17,6 @@ import {
 } from "@/components/dashboard/DashboardStatus";
 import RegisteredBottomNav from "@/components/dashboard/RegisteredBottomNav";
 import UnknownCycleState from "@/components/dashboard/UnknownCycleState";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import useDashboardCycle from "@/hooks/useDashboardCycle";
 
@@ -30,11 +29,7 @@ const CALENDAR_ROUTE =
   "/dashboard/log-period" as Href;
 
 function RegisteredDashboardScreen() {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { isDark, colors: theme } = useTheme();
 
   const {
     loading,

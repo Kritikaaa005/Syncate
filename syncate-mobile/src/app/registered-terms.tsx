@@ -2,7 +2,6 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { View } from "react-native";
 
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLegalDocument } from "@/hooks/useLegalDocument";
 import { useRegisteredConsent } from "@/hooks/useRegisteredConsent";
@@ -12,11 +11,7 @@ const NEXT_ROUTE = "/onboarding/nickname" as const;
 
 export default function RegisteredTermsRoute() {
   const router = useRouter();
-  const { isDark } = useTheme();
-
-  const colors = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors } = useTheme();
 
   const terms = useLegalDocument(
     "registered_terms"
