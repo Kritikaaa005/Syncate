@@ -161,6 +161,8 @@ REST_FRAMEWORK = {
         # matches registration's rate; tighten later if it turns out to
         # be annoying for legit users who fat-finger their password.
         "login": "10/hour",
+        "partner-code-validation": "30/hour",
+        "partner-registration": "10/hour",
     },
 }
 

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from .models import UserProfile
-
+from registration.serializers import RegistrationSerializer
 
 class NicknameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -203,3 +203,26 @@ class SetPasswordSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class PartnerCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=8, trim_whitespace=True)
+
+    def validate_code(self, value):
+        code = value.upper()
+        if not code:
+            raise serializers.ValidationError(
+                "A partner code is required."
+            )
+        return code
+
+
+class PartnerRegistrationSerializer(RegistrationSerializer):
+    code = serializers.CharField(max_length=8, trim_whitespace=True)
+    nickname = serializers.CharField(max_length=30, trim_whitespace=False)
+
+    def validate_code(self, value):
+        return value.strip().upper()
+
+    def validate_nickname(self, value):
+        return NicknameSerializer().validate_nickname(value)

@@ -174,3 +174,43 @@ class EmailVerificationToken(models.Model):
             self.used_at is None
             and not self.is_expired
         )
+
+
+class UserPartner(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="partner_relationship",
+    )
+    partner = models.OneToOneField(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="linked_as_partner",
+        null=True,
+        blank=True,
+    )
+    code = models.CharField(
+        max_length=8,
+        unique=True,
+        null=True,
+        blank=True,
+    )
+    expiration_date = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+    counter = models.PositiveIntegerField(default=0)
+    linked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "User Partner"
+        verbose_name_plural = "User Partners"
+
+    def __str__(self):
+        return f"Partner relationship for user {self.user_id}"

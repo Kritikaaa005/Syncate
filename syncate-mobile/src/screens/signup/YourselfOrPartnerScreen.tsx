@@ -5,13 +5,15 @@
 // built yet, so that card is visibly present (so people know it's coming)
 // but disabled rather than hidden entirely.
 
-import { router } from "expo-router";
-import { ArrowLeft, Clock, User, Users } from "lucide-react-native";
+import { type Href, router } from "expo-router";
+import { ArrowLeft, User, Users } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
+
+const PARTNER_JOIN_ROUTE = "/partner/join" as Href;
 
 export default function YourselfOrPartnerScreen() {
   const { isDark } = useTheme();
@@ -28,9 +30,9 @@ export default function YourselfOrPartnerScreen() {
           <ArrowLeft size={20} color={t.primary} />
         </Pressable>
 
-        <Text style={[styles.title, { color: t.text }]}>Who's this for?</Text>
+        <Text style={[styles.title, { color: t.text }]}>Who’s this for?</Text>
         <Text style={[styles.subtitle, { color: t.muted }]}>
-          Let us know how you'll be using Syncate.
+          Let us know how you’ll be using Syncate.
         </Text>
 
         <Pressable
@@ -50,25 +52,22 @@ export default function YourselfOrPartnerScreen() {
           </Text>
         </Pressable>
 
-        <View
-          style={[
+        <Pressable
+          onPress={() => router.push(PARTNER_JOIN_ROUTE)}
+          style={({ pressed }) => [
             styles.card,
-            styles.cardDisabled,
-            { backgroundColor: t.card, borderColor: t.border },
+            { backgroundColor: t.card, borderColor: t.primary },
+            pressed && styles.cardPressed,
           ]}
         >
-          <View style={[styles.iconCircle, { backgroundColor: t.border }]}>
-            <Users size={26} color={t.muted} />
+          <View style={[styles.iconCircle, { backgroundColor: t.primarySoft }]}>
+            <Users size={26} color={t.primary} />
           </View>
-          <Text style={[styles.cardTitle, { color: t.muted }]}>For a partner</Text>
+          <Text style={[styles.cardTitle, { color: t.text }]}>For a partner</Text>
           <Text style={[styles.cardDescription, { color: t.muted }]}>
-            Support someone else's tracking with shared access.
+            Support someone else’s tracking with shared access.
           </Text>
-          <View style={[styles.comingSoonBadge, { backgroundColor: t.border }]}>
-            <Clock size={12} color={t.muted} />
-            <Text style={[styles.comingSoonText, { color: t.muted }]}>Coming soon</Text>
-          </View>
-        </View>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -97,9 +96,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
-  cardDisabled: {
-    opacity: 0.6,
-  },
   iconCircle: {
     width: 52,
     height: 52,
@@ -110,15 +106,4 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
   cardDescription: { fontSize: 14, lineHeight: 20 },
-  comingSoonBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginTop: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-  },
-  comingSoonText: { fontSize: 12, fontWeight: "600" },
 });

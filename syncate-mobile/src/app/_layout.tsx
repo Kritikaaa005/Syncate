@@ -4,6 +4,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { guestTheme } from "@/constants/guestTheme";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { PeriodSyncCoordinator } from "@/components/system/PeriodSyncCoordinator";
 
 function AppNavigator() {
   const { isDark } = useTheme();
@@ -35,6 +36,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
+        <PeriodSyncCoordinator />
         <AppNavigator />
       </ThemeProvider>
     </SafeAreaProvider>

@@ -27,6 +27,9 @@ from .views import (
     UpdateNicknameView,
     UpdateTrackingModeView,
     VerifyEmailConfirmView,
+    PartnerCodeView,
+    RegisterPartnerView,
+    ValidatePartnerCodeView,
 )
 
 
@@ -57,6 +60,21 @@ urlpatterns = [
         UpdateTrackingModeView.as_view(),
         name="update-tracking-mode",
     ),
+    path(
+    "partner/code/",
+    PartnerCodeView.as_view(),
+    name="partner-code",
+),
+path(
+    "partner/validate-code/",
+    ValidatePartnerCodeView.as_view(),
+    name="validate-partner-code",
+),
+path(
+    "partner/register/",
+    RegisterPartnerView.as_view(),
+    name="register-partner",
+),
 ]
 
 
