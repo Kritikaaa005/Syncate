@@ -82,8 +82,7 @@ function CycleProgressRing({
           strokeDashoffset={
             strokeDashoffset
           }
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
 
