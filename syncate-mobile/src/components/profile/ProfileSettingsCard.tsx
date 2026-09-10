@@ -11,6 +11,7 @@ import {
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import {
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -66,10 +67,12 @@ const ITEMS: PlaceholderItem[] = [
 
 type ProfileSettingsCardProps = {
   theme: GuestThemeColors;
+  onLanguagePress: () => void;
 };
 
 function ProfileSettingsCard({
   theme,
+  onLanguagePress,
 }: ProfileSettingsCardProps) {
   return (
     <View
@@ -127,10 +130,70 @@ function ProfileSettingsCard({
               />
             ) : null}
 
-            <View
-              style={styles.itemRow}
-              accessibilityLabel={`${item.title}. Coming soon.`}
-            >
+            {item.title === "Language" ? (
+              <Pressable
+                onPress={onLanguagePress}
+                accessibilityRole="button"
+                accessibilityLabel="Language. English."
+                style={({ pressed }) => [
+                  styles.itemRow,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.itemIcon,
+                    {
+                      backgroundColor:
+                        theme.primarySoft,
+                    },
+                  ]}
+                >
+                  <Icon
+                    size={18}
+                    color={theme.primary}
+                  />
+                </View>
+
+                <View style={styles.itemText}>
+                  <Text
+                    style={[
+                      styles.itemTitle,
+                      { color: itemColor },
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.itemSubtitle,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    {item.subtitle}
+                  </Text>
+                </View>
+
+                <Text
+                  style={[
+                    styles.languageValue,
+                    { color: theme.muted },
+                  ]}
+                >
+                  English
+                </Text>
+
+                <ChevronRight
+                  size={17}
+                  color={theme.muted}
+                  opacity={0.45}
+                />
+              </Pressable>
+            ) : (
+              <View
+                style={styles.itemRow}
+                accessibilityLabel={`${item.title}. Coming soon.`}
+              >
               <View
                 style={[
                   styles.itemIcon,
@@ -189,7 +252,8 @@ function ProfileSettingsCard({
                 color={theme.muted}
                 opacity={0.45}
               />
-            </View>
+              </View>
+            )}
           </View>
         );
       })}
@@ -278,6 +342,16 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     fontWeight: "700",
     letterSpacing: 0.2,
+  },
+
+  languageValue: {
+    marginRight: 8,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  pressed: {
+    opacity: 0.72,
   },
 });
 

@@ -171,7 +171,7 @@ export function getMyProfile(): Promise<UserProfileSummary> {
   );
 }
 
-export function addOrResendEmail(
+export function updateEmail(
   email: string
 ): Promise<EmailUpdateResponse> {
   return authenticatedPatch<EmailUpdateResponse>(

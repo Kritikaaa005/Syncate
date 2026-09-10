@@ -1,7 +1,9 @@
 import {
   type Href,
+  useFocusEffect,
   router,
 } from "expo-router";
+import { useCallback } from "react";
 import { ArrowLeft } from "lucide-react-native";
 import {
   Alert,
@@ -22,6 +24,8 @@ import useUserProfile from "@/hooks/useUserProfile";
 
 const TERMS_ROUTE =
   "/dashboard/profile/terms" as Href;
+const EMAIL_ROUTE =
+  "/dashboard/profile/email" as Href;
 
 function ProfileAccountScreen() {
   const { isDark } = useTheme();
@@ -40,7 +44,13 @@ function ProfileAccountScreen() {
     submitEmail,
   } = useUserProfile();
 
-  const handleAddOrResendEmail = async (
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
+
+  const handleUpdateEmail = async (
     email: string
   ) => {
     const result = await submitEmail(email);
@@ -182,7 +192,10 @@ function ProfileAccountScreen() {
             theme={theme}
             savingEmail={savingEmail}
             onAddOrResendEmail={
-              handleAddOrResendEmail
+              handleUpdateEmail
+            }
+            onEmailPress={() =>
+              router.push(EMAIL_ROUTE)
             }
             onTermsPress={() =>
               router.push(TERMS_ROUTE)
