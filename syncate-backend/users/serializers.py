@@ -82,12 +82,11 @@ class UserProfileReadSerializer(serializers.ModelSerializer):
 
 class AddEmailSerializer(serializers.Serializer):
     """
-    Validate an email being attached to the signed-in account.
+    Validate an email being added to or changed on the signed-in account.
 
-    A user who already has a verified email cannot change it through this
-    endpoint yet; email-change verification is a separate future Settings
-    feature. Re-submitting the same *unverified* email is allowed so the
-    existing verification flow can issue a fresh link if needed.
+    A user may add or change an email, and re-submitting the same unverified
+    email acts as a verification resend. The email must not belong to
+    another account.
     """
 
     email = serializers.EmailField(
@@ -98,23 +97,8 @@ class AddEmailSerializer(serializers.Serializer):
     def validate_email(self, value):
         request = self.context["request"]
         user = request.user
-        profile, _ = UserProfile.objects.get_or_create(
-            user=user,
-        )
 
         normalized = value.strip().lower()
-        current_email = (user.email or "").strip().lower()
-
-        if current_email:
-            if profile.is_email_verified:
-                raise serializers.ValidationError(
-                    "A verified email address is already attached to this account."
-                )
-
-            if current_email != normalized:
-                raise serializers.ValidationError(
-                    "An unverified email is already attached. Email changes will be available later."
-                )
 
         if (
             User.objects.filter(

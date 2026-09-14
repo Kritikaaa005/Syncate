@@ -104,7 +104,7 @@ class ProfileApiTests(APITestCase):
         self.assertTrue(response.data["email_verification_sent"])
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_verified_email_cannot_be_changed_here(self):
+    def test_verified_email_can_be_changed(self):
         self.user.email = "verified@example.com"
         self.user.save(update_fields=["email"])
         self.profile.is_email_verified = True
@@ -121,5 +121,36 @@ class ProfileApiTests(APITestCase):
 
         self.assertEqual(
             response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_200_OK,
         )
+
+        self.user.refresh_from_db()
+        self.profile.refresh_from_db()
+
+        self.assertEqual(self.user.email, "other@example.com")
+        self.assertFalse(self.profile.is_email_verified)
+        self.assertTrue(response.data["email_verification_sent"])
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["other@example.com"])
+
+    def test_unverified_email_can_be_changed(self):
+        self.user.email = "old@example.com"
+        self.user.save(update_fields=["email"])
+        self.profile.is_email_verified = False
+        self.profile.save(update_fields=["is_email_verified", "updated_at"])
+        self.authenticate()
+
+        response = self.client.patch(
+            self.email_url,
+            {"email": "new@example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.profile.refresh_from_db()
+
+        self.assertEqual(self.user.email, "new@example.com")
+        self.assertFalse(self.profile.is_email_verified)
+        self.assertEqual(mail.outbox[0].to, ["new@example.com"])

@@ -5,7 +5,7 @@ import {
 } from "react";
 
 import {
-  addOrResendEmail,
+  updateEmail,
   getMyProfile,
 } from "@/services/userService";
 import type {
@@ -75,7 +75,7 @@ export default function useUserProfile() {
 
       try {
         const result =
-          await addOrResendEmail(email);
+          await updateEmail(email);
 
         setProfile((current) => ({
           nickname:
@@ -95,14 +95,23 @@ export default function useUserProfile() {
     []
   );
 
+  const reload = useCallback(
+    () => loadProfile(false),
+    [loadProfile]
+  );
+  const refresh = useCallback(
+    () => loadProfile(true),
+    [loadProfile]
+  );
+
   return {
     profile,
     loading,
     refreshing,
     savingEmail,
     errorMessage,
-    reload: () => loadProfile(false),
-    refresh: () => loadProfile(true),
+    reload,
+    refresh,
     submitEmail,
   };
 }

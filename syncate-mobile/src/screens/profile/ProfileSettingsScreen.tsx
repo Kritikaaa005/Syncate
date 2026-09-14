@@ -1,4 +1,7 @@
-import { router } from "expo-router";
+import {
+  type Href,
+  router,
+} from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import {
   Pressable,
@@ -12,6 +15,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ProfileSettingsCard from "@/components/profile/ProfileSettingsCard";
 import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
+
+const LANGUAGE_ROUTE =
+  "/dashboard/profile/language" as Href;
 
 function ProfileSettingsScreen() {
   const { isDark } = useTheme();
@@ -75,7 +81,12 @@ function ProfileSettingsScreen() {
           styles.scrollContent
         }
       >
-        <ProfileSettingsCard theme={theme} />
+        <ProfileSettingsCard
+          theme={theme}
+          onLanguagePress={() =>
+            router.push(LANGUAGE_ROUTE)
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );

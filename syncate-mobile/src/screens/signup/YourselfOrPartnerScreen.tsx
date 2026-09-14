@@ -1,10 +1,3 @@
-// Destination: src/screens/signup/YourselfOrPartnerScreen.tsx
-//
-// First screen after tapping "Create Free Account" (issue #6). Only the
-// "For myself" path goes anywhere right now — partner accounts aren't
-// built yet, so that card is visibly present (so people know it's coming)
-// but disabled rather than hidden entirely.
-
 import { type Href, router } from "expo-router";
 import { ArrowLeft, User, Users } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -55,9 +48,9 @@ export default function YourselfOrPartnerScreen() {
           style={({ pressed }) => [
             styles.card,
             { backgroundColor: t.card, borderColor: t.primary },
-            pressed && styles.cardPressed,
-          ]}
-        >
+            pressed && styles.cardPressed, 
+          ]} 
+        > 
           <View style={[styles.iconCircle, { backgroundColor: t.primarySoft }]}>
             <Users size={26} color={t.primary} />
           </View>

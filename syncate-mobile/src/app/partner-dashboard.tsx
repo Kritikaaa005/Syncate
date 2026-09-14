@@ -1,11 +1,22 @@
-import ComingSoonScreen from "@/components/common/ComingSoonScreen";
+import { StyleSheet, Text, View } from "react-native";
 
-// TODO: Replace with Partner Dashboard implementation.
 export default function PartnerDashboardRoute() {
   return (
-    <ComingSoonScreen
-      title="Partner Dashboard"
-      description="Your partner dashboard is being prepared."
-    />
+    <View style={styles.container}>
+      <Text style={styles.title}>hello partner</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    color: "#FFFFFF",
+    fontSize: 32,
+    fontWeight: "700",
+  },
+});

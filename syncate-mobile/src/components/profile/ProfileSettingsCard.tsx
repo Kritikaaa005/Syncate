@@ -1,3 +1,4 @@
+import { router, type Href } from "expo-router";
 import {
   Bell,
   CalendarClock,
@@ -10,7 +11,6 @@ import {
   Trash2,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { router, type Href } from "expo-router";
 import {
   Pressable,
   StyleSheet,
@@ -25,10 +25,6 @@ type SettingsItem = {
   subtitle: string;
   icon: LucideIcon;
   destructive?: boolean;
-  // Present => the row is a real, tappable navigation target and
-  // shows a chevron instead of "Soon". Absent => still a placeholder,
-  // matching how every row here behaved before password/period-details
-  // were built.
   href?: Href;
 };
 
@@ -75,10 +71,12 @@ const ITEMS: SettingsItem[] = [
 
 type ProfileSettingsCardProps = {
   theme: GuestThemeColors;
+  onLanguagePress: () => void;
 };
 
 function ProfileSettingsCard({
   theme,
+  onLanguagePress,
 }: ProfileSettingsCardProps) {
   return (
     <View
@@ -96,8 +94,7 @@ function ProfileSettingsCard({
           style={[
             styles.headingIcon,
             {
-              backgroundColor:
-                theme.primarySoft,
+              backgroundColor: theme.primarySoft,
             },
           ]}
         >
@@ -106,6 +103,7 @@ function ProfileSettingsCard({
             color={theme.primary}
           />
         </View>
+
         <Text
           style={[
             styles.cardTitle,
@@ -118,9 +116,11 @@ function ProfileSettingsCard({
 
       {ITEMS.map((item, index) => {
         const Icon = item.icon;
+
         const itemColor = item.destructive
           ? theme.primary
           : theme.text;
+
         const isNavigable = Boolean(item.href);
 
         return (
@@ -130,92 +130,158 @@ function ProfileSettingsCard({
                 style={[
                   styles.divider,
                   {
-                    backgroundColor:
-                      theme.border,
+                    backgroundColor: theme.border,
                   },
                 ]}
               />
             ) : null}
 
-            <Pressable
-              onPress={
-                item.href
-                  ? () => router.push(item.href as Href)
-                  : undefined
-              }
-              disabled={!isNavigable}
-              accessibilityRole={isNavigable ? "button" : undefined}
-              accessibilityLabel={
-                isNavigable
-                  ? item.title
-                  : `${item.title}. Coming soon.`
-              }
-              style={({ pressed }) => [
-                styles.itemRow,
-                pressed && isNavigable && styles.itemRowPressed,
-              ]}
-            >
-              <View
-                style={[
-                  styles.itemIcon,
-                  {
-                    backgroundColor:
-                      theme.primarySoft,
-                  },
+            {item.title === "Language" ? (
+              <Pressable
+                onPress={onLanguagePress}
+                accessibilityRole="button"
+                accessibilityLabel="Language. English."
+                style={({ pressed }) => [
+                  styles.itemRow,
+                  pressed && styles.itemRowPressed,
                 ]}
               >
-                <Icon
-                  size={18}
-                  color={theme.primary}
-                />
-              </View>
-
-              <View style={styles.itemText}>
-                <Text
-                  style={[
-                    styles.itemTitle,
-                    { color: itemColor },
-                  ]}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.itemSubtitle,
-                    { color: theme.muted },
-                  ]}
-                >
-                  {item.subtitle}
-                </Text>
-              </View>
-
-              {!isNavigable ? (
                 <View
                   style={[
-                    styles.soonBadge,
+                    styles.itemIcon,
                     {
-                      backgroundColor:
-                        theme.primarySoft,
+                      backgroundColor: theme.primarySoft,
                     },
                   ]}
                 >
+                  <Icon
+                    size={18}
+                    color={theme.primary}
+                  />
+                </View>
+
+                <View style={styles.itemText}>
                   <Text
                     style={[
-                      styles.soonText,
-                      { color: theme.primary },
+                      styles.itemTitle,
+                      { color: itemColor },
                     ]}
                   >
-                    Soon
+                    {item.title}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.itemSubtitle,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    {item.subtitle}
                   </Text>
                 </View>
-              ) : null}
 
-              <ChevronRight
-                size={17}
-                color={theme.muted}
-                opacity={isNavigable ? 0.75 : 0.45}
-              />
-            </Pressable>
+                <Text
+                  style={[
+                    styles.languageValue,
+                    { color: theme.muted },
+                  ]}
+                >
+                  English
+                </Text>
+
+                <ChevronRight
+                  size={17}
+                  color={theme.muted}
+                  opacity={0.75}
+                />
+              </Pressable>
+            ) : (
+              <Pressable
+                onPress={
+                  item.href
+                    ? () => router.push(item.href as Href)
+                    : undefined
+                }
+                disabled={!isNavigable}
+                accessibilityRole={
+                  isNavigable ? "button" : undefined
+                }
+                accessibilityLabel={
+                  isNavigable
+                    ? item.title
+                    : `${item.title}. Coming soon.`
+                }
+                style={({ pressed }) => [
+                  styles.itemRow,
+                  pressed &&
+                    isNavigable &&
+                    styles.itemRowPressed,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.itemIcon,
+                    {
+                      backgroundColor: theme.primarySoft,
+                    },
+                  ]}
+                >
+                  <Icon
+                    size={18}
+                    color={theme.primary}
+                  />
+                </View>
+
+                <View style={styles.itemText}>
+                  <Text
+                    style={[
+                      styles.itemTitle,
+                      { color: itemColor },
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.itemSubtitle,
+                      { color: theme.muted },
+                    ]}
+                  >
+                    {item.subtitle}
+                  </Text>
+                </View>
+
+                {!isNavigable ? (
+                  <View
+                    style={[
+                      styles.soonBadge,
+                      {
+                        backgroundColor:
+                          theme.primarySoft,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.soonText,
+                        { color: theme.primary },
+                      ]}
+                    >
+                      Soon
+                    </Text>
+                  </View>
+                ) : null}
+
+                <ChevronRight
+                  size={17}
+                  color={theme.muted}
+                  opacity={
+                    isNavigable ? 0.75 : 0.45
+                  }
+                />
+              </Pressable>
+            )}
           </View>
         );
       })}
@@ -308,6 +374,12 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     fontWeight: "700",
     letterSpacing: 0.2,
+  },
+
+  languageValue: {
+    marginRight: 8,
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 
