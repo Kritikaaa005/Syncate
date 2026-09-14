@@ -1,7 +1,13 @@
 // Destination: components/guest/prediction/MiniCalendar.tsx
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Sparkle } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Sparkle,
+} from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   getCalendarCells,
@@ -16,12 +22,22 @@ type MiniCalendarProps = {
   value: string;
   onSelect: (value: string) => void;
   isDark: boolean;
+
   // Off by default — the existing guest screens (log period, quick
   // prediction) only ever need to step a month or two, so they keep the
   // original two-arrow header. A DOB can be decades back, though, so
-  // DateOfBirthInput turns this on to add prev/next-year jumps too,
-  // rather than making everyone click through ~430 months to reach 1990.
+  // DateOfBirthInput turns this on to add prev/next-year jumps too.
   enableYearNav?: boolean;
+
+  // Used by the Symptoms screen, where the calendar is part of the normal
+  // page layout rather than an absolute-positioned dropdown.
+  embedded?: boolean;
+
+  // The tracking branch already calls MiniCalendar with this prop, but the
+  // branch did not actually implement a data source for per-day log dots.
+  // Keep the prop in the shared API so the merged Symptoms screen compiles
+  // without pretending that log-dot rendering already exists.
+  showLogDots?: boolean;
 };
 
 function chunkIntoWeeks<T>(items: T[]): T[][] {
@@ -32,8 +48,21 @@ function chunkIntoWeeks<T>(items: T[]): T[][] {
   return weeks;
 }
 
-function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCalendarProps) {
+function MiniCalendar({
+  value,
+  onSelect,
+  isDark,
+  enableYearNav = false,
+  embedded = false,
+  showLogDots = false,
+}: MiniCalendarProps) {
   const { colors } = useTheme();
+
+  // Reserved for the tracking feature. The tracking branch supplied only a
+  // boolean and no collection of dates containing logs, so there is not enough
+  // information here to truthfully draw log dots yet.
+  void showLogDots;
+
   const selectedDate = parseDateValue(value);
   const [viewDate, setViewDate] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
@@ -72,6 +101,7 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
     <View
       style={[
         styles.container,
+        embedded && styles.embeddedContainer,
         { shadowColor: colors.shadow },
         {
           borderColor: isDark ? "#3A2A38" : "#E8EEF8",
@@ -84,7 +114,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
           <Pressable
             onPress={goPrevYear}
             accessibilityLabel="Previous year"
-            style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+            style={[
+              styles.navButton,
+              { backgroundColor: isDark ? "#221A28" : "#FFFFFF" },
+            ]}
           >
             <ChevronsLeft size={14} color={accent} />
           </Pressable>
@@ -93,7 +126,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
         <Pressable
           onPress={goPrevMonth}
           accessibilityLabel="Previous month"
-          style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+          style={[
+            styles.navButton,
+            { backgroundColor: isDark ? "#221A28" : "#FFFFFF" },
+          ]}
         >
           <ChevronLeft size={14} color={accent} />
         </Pressable>
@@ -106,7 +142,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
         <Pressable
           onPress={goNextMonth}
           accessibilityLabel="Next month"
-          style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+          style={[
+            styles.navButton,
+            { backgroundColor: isDark ? "#221A28" : "#FFFFFF" },
+          ]}
         >
           <ChevronRight size={14} color={accent} />
         </Pressable>
@@ -115,7 +154,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
           <Pressable
             onPress={goNextYear}
             accessibilityLabel="Next year"
-            style={[styles.navButton, { backgroundColor: isDark ? "#221A28" : "#FFFFFF" }]}
+            style={[
+              styles.navButton,
+              { backgroundColor: isDark ? "#221A28" : "#FFFFFF" },
+            ]}
           >
             <ChevronsRight size={14} color={accent} />
           </Pressable>
@@ -127,7 +169,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
           {WEEKDAY_LABELS.map((label, i) => (
             <Text
               key={i}
-              style={[styles.weekdayLabel, { color: isDark ? "#B7ACB8" : "#8D8A99" }]}
+              style={[
+                styles.weekdayLabel,
+                { color: isDark ? "#B7ACB8" : "#8D8A99" },
+              ]}
             >
               {label}
             </Text>
@@ -162,7 +207,10 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
                       style={[
                         styles.dayText,
                         selected
-                          ? { color: isDark ? "#221A28" : "#FFFFFF", fontWeight: "600" }
+                          ? {
+                              color: isDark ? "#221A28" : "#FFFFFF",
+                              fontWeight: "600",
+                            }
                           : disabled || !inMonth
                           ? { color: isDark ? "#3A2A38" : colors.secondary }
                           : { color: isDark ? "#F3EDF1" : "#1E1730" },
@@ -175,7 +223,9 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
                   <View
                     style={[
                       styles.todayDot,
-                      { backgroundColor: isToday ? accent : "transparent" },
+                      {
+                        backgroundColor: isToday ? accent : "transparent",
+                      },
                     ]}
                   />
                 </View>
@@ -192,7 +242,9 @@ function MiniCalendar({ value, onSelect, isDark, enableYearNav = false }: MiniCa
               { borderColor: isDark ? "#3A2A38" : "#E8EEF8" },
             ]}
           >
-            <Text style={[styles.todayButtonText, { color: accent }]}>Jump to today</Text>
+            <Text style={[styles.todayButtonText, { color: accent }]}>
+              Jump to today
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -215,6 +267,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 36,
     elevation: 12,
+  },
+  embeddedContainer: {
+    position: "relative",
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 0,
+    marginTop: 0,
   },
   monthHeader: {
     flexDirection: "row",

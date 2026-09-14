@@ -134,11 +134,15 @@ function RegisteredDashboardScreen() {
     router.push(CALENDAR_ROUTE);
   };
 
+  // const openSymptoms = () => {
+  //   Alert.alert(
+  //     "Symptoms",
+  //     "Symptom tracking will be connected here."
+  //   );
+  // };
+
   const openSymptoms = () => {
-    Alert.alert(
-      "Symptoms",
-      "Symptom tracking will be connected here."
-    );
+    router.push("/dashboard/symptoms");
   };
 
   const openSexTracking = () => {

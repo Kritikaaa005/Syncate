@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     # "Model class cycle_tracking.models.CycleProfile doesn't declare an
     # explicit app_label and isn't in an application in INSTALLED_APPS" ===
     "cycle_tracking.apps.CycleTrackingConfig",
+    "tracking.apps.TrackingConfig",
 
    "users.apps.UsersConfig",
 

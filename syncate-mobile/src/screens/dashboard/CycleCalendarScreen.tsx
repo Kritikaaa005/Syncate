@@ -44,7 +44,6 @@ import PhaseLegend from "@/components/dashboard/PhaseLegend";
 import UnknownCycleState from "@/components/dashboard/UnknownCycleState";
 import {
   cyclePhaseColors,
-  guestTheme,
 } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import useCycleCalendar from "@/hooks/useCycleCalendar";
@@ -95,11 +94,10 @@ function addMonths(date: Date, amount: number): Date {
 }
 
 function CycleCalendarScreen() {
-  const { isDark } = useTheme();
-
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const {
+    isDark,
+    colors: theme,
+  } = useTheme();
 
   const phaseTheme = isDark
     ? cyclePhaseColors.dark
