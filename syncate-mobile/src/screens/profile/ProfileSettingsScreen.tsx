@@ -10,14 +10,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileSettingsCard from "@/components/profile/ProfileSettingsCard";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function ProfileSettingsScreen() {
-  const { isDark } = useTheme();
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
     <SafeAreaView

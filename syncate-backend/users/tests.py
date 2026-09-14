@@ -15,6 +15,7 @@ Includes:
 
 from datetime import date, timedelta
 from io import StringIO
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.management import call_command
@@ -33,7 +34,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import UserProfile
+from .models import EmailVerificationToken, UserProfile
 from .services import (
     consume_email_verification_token,
     deactivate_account,
@@ -523,6 +524,81 @@ class EmailVerificationTests(TestCase):
                 new_token.token
             )
         )
+
+
+class ProfileEmailAPITests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="profile-email-user",
+            email="wrong@example.com",
+            password="StrongPassword123!",
+        )
+        self.profile, _ = UserProfile.objects.get_or_create(user=self.user)
+        self.profile.is_email_verified = False
+        self.profile.save(update_fields=["is_email_verified"])
+        self.url = reverse("add-email")
+        self.client.force_authenticate(user=self.user)
+
+    @patch("users.views.send_verification_email")
+    def test_unverified_email_can_be_replaced(self, mocked_send):
+        old_token = issue_email_verification_token(
+            self.user,
+            "wrong@example.com",
+        )
+
+        response = self.client.patch(
+            self.url,
+            {"email": "Correct@Example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.user.refresh_from_db()
+        self.profile.refresh_from_db()
+        old_token.refresh_from_db()
+
+        self.assertEqual(self.user.email, "correct@example.com")
+        self.assertFalse(self.profile.is_email_verified)
+        self.assertIsNotNone(old_token.used_at)
+
+        new_token = EmailVerificationToken.objects.filter(
+            user=self.user,
+            email="correct@example.com",
+            used_at__isnull=True,
+        ).latest("created_at")
+
+        self.assertTrue(new_token.is_valid)
+        mocked_send.assert_called_once_with(new_token)
+
+    @patch("users.views.send_verification_email")
+    def test_same_unverified_email_can_still_resend(self, mocked_send):
+        response = self.client.patch(
+            self.url,
+            {"email": "wrong@example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["email"], "wrong@example.com")
+        mocked_send.assert_called_once()
+
+    @patch("users.views.send_verification_email")
+    def test_verified_email_still_cannot_be_replaced(self, mocked_send):
+        self.profile.is_email_verified = True
+        self.profile.save(update_fields=["is_email_verified"])
+
+        response = self.client.patch(
+            self.url,
+            {"email": "new@example.com"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.email, "wrong@example.com")
+        mocked_send.assert_not_called()
 
 
 class LoginTests(TestCase):

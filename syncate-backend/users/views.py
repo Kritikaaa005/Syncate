@@ -90,8 +90,8 @@ class AddEmailView(APIView):
     """
     PATCH /api/users/me/email/
 
-    Add an optional recovery email after registration or resend
-    verification for the same unverified email.
+    Add an optional recovery email after registration, replace a pending
+    unverified email, or resend verification for the same pending email.
     """
 
     permission_classes = [IsAuthenticated]

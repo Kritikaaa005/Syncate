@@ -1,11 +1,38 @@
 import NetInfo, { type NetInfoState } from "@react-native-community/netinfo";
 import { useEffect, useRef } from "react";
-import { AppState, type AppStateStatus } from "react-native";
+import { AppState, Platform, type AppStateStatus } from "react-native";
 
-import { triggerAutomaticPeriodSync } from "@/services/periodSyncService";
+import { getAccessToken } from "@/utils/tokenStorage";
 
 function hasUsableConnection(state: NetInfoState): boolean {
   return state.isConnected === true && state.isInternetReachable !== false;
+}
+
+async function triggerNativePeriodSync(): Promise<void> {
+  // The current offline queue is a native SQLite feature. Keeping the import
+  // lazy prevents app startup (and Expo Router's web/static renderer) from
+  // loading expo-sqlite when there is no authenticated user to synchronize.
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  try {
+    if (!(await getAccessToken())) {
+      return;
+    }
+
+    const { triggerAutomaticPeriodSync } = await import(
+      "@/services/periodSyncService"
+    );
+
+    await triggerAutomaticPeriodSync();
+  } catch {
+    // Offline synchronization must never make the whole app fail to open.
+    // A later foreground/network event can try again.
+    if (__DEV__) {
+      console.warn("Automatic period synchronization could not start.");
+    }
+  }
 }
 
 export function PeriodSyncCoordinator() {
@@ -20,25 +47,30 @@ export function PeriodSyncCoordinator() {
         const state = await NetInfo.fetch();
 
         if (isMounted && hasUsableConnection(state)) {
-          void triggerAutomaticPeriodSync();
+          await triggerNativePeriodSync();
         }
       } catch {
         if (__DEV__) {
-          console.warn("Could not determine connectivity for period synchronization.");
+          console.warn(
+            "Could not determine connectivity for period synchronization."
+          );
         }
       }
     };
 
     void syncIfOnline();
 
-    const appStateSubscription = AppState.addEventListener("change", (nextState) => {
-      const previousState = appState.current;
-      appState.current = nextState;
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (nextState) => {
+        const previousState = appState.current;
+        appState.current = nextState;
 
-      if (previousState !== "active" && nextState === "active") {
-        void syncIfOnline();
+        if (previousState !== "active" && nextState === "active") {
+          void syncIfOnline();
+        }
       }
-    });
+    );
 
     const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
       const isOnline = hasUsableConnection(state);
@@ -47,7 +79,7 @@ export function PeriodSyncCoordinator() {
       wasOnline.current = isOnline;
 
       if (connectivityWasRestored) {
-        void triggerAutomaticPeriodSync();
+        void triggerNativePeriodSync();
       }
     });
 

@@ -10,7 +10,6 @@ import {
   router,
 } from "expo-router";
 import {
-  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -36,6 +35,8 @@ const DASHBOARD_ROUTE =
 const CALENDAR_ROUTE =
   "/dashboard/calendar" as Href;
 
+const INSIGHTS_ROUTE = "/dashboard/insights" as Href;
+
 const PROFILE_ROUTE = "/profile" as Href;
 
 function RegisteredBottomNav({
@@ -49,15 +50,6 @@ function RegisteredBottomNav({
     activeItem === item
       ? theme.primary
       : theme.muted;
-
-  const showComingSoon = (
-    feature: string
-  ) => {
-    Alert.alert(
-      "Coming soon",
-      `${feature} will be added later.`
-    );
-  };
 
   return (
     <View
@@ -168,7 +160,7 @@ function RegisteredBottomNav({
 
       <Pressable
         onPress={() =>
-          showComingSoon("Insights")
+          router.push(INSIGHTS_ROUTE)
         }
         style={styles.navItem}
         accessibilityRole="button"

@@ -1,125 +1,37 @@
-import {
-  type Href,
-  router,
-} from "expo-router";
-import {
-  ChevronRight,
-  Settings,
-  UserRound,
-} from "lucide-react-native";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { type Href, router } from "expo-router";
+import { ChevronRight, Settings, UserRound } from "lucide-react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import RegisteredBottomNav from "@/components/dashboard/RegisteredBottomNav";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const ACCOUNT_ROUTE =
-  "/dashboard/profile/account" as Href;
-
-const SETTINGS_ROUTE =
-  "/dashboard/profile/settings" as Href;
-
-type StatItem = {
-  value: string;
-  label: string;
-};
-
-const STATS: StatItem[] = [
-  {
-    value: "0",
-    label: "Ads shown",
-  },
-  {
-    value: "256-bit",
-    label: "Encryption",
-  },
-  {
-    value: "1-tap",
-    label: "Delete anytime",
-  },
-];
+const ACCOUNT_ROUTE = "/dashboard/profile/account" as Href;
+const SETTINGS_ROUTE = "/dashboard/profile/settings" as Href;
 
 function RegisteredProfileScreen() {
-  const { isDark } = useTheme();
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   return (
-    <SafeAreaView
-      style={[
-        styles.safeArea,
-        {
-          backgroundColor:
-            theme.background,
-        },
-      ]}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={
-          styles.scrollContent
-        }
+        contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerBlock}>
-          <View
-            style={[
-              styles.headerIconOuter,
-              {
-                backgroundColor:
-                  theme.primarySoft,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.headerIconInner,
-                {
-                  backgroundColor:
-                    theme.primaryButton,
-                },
-              ]}
-            >
-              <UserRound
-                size={26}
-                color="#FFFFFF"
-              />
+          <View style={[styles.headerIconOuter, { backgroundColor: theme.primarySoft }]}>
+            <View style={[styles.headerIconInner, { backgroundColor: theme.primaryButton }]}>
+              <UserRound size={26} color="#FFFFFF" />
             </View>
           </View>
 
-          <Text
-            style={[
-              styles.title,
-              { color: theme.text },
-            ]}
-          >
-            Profile
-          </Text>
-          <Text
-            style={[
-              styles.subtitle,
-              { color: theme.muted },
-            ]}
-          >
+          <Text style={[styles.title, { color: theme.text }]}>Profile</Text>
+          <Text style={[styles.subtitle, { color: theme.muted }]}>
             Your account and preferences
           </Text>
         </View>
 
-        <Text
-          style={[
-            styles.sectionLabel,
-            { color: theme.muted },
-          ]}
-        >
-          Manage
-        </Text>
+        <Text style={[styles.sectionLabel, { color: theme.muted }]}>Manage</Text>
 
         <View
           style={[
@@ -132,360 +44,109 @@ function RegisteredProfileScreen() {
           ]}
         >
           <Pressable
-            onPress={() =>
-              router.push(ACCOUNT_ROUTE)
-            }
+            onPress={() => router.push(ACCOUNT_ROUTE)}
             accessibilityRole="button"
             accessibilityLabel="Open user profile"
-            style={({ pressed }) => [
-              styles.navRow,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
           >
-            <View
-              style={[
-                styles.navIcon,
-                {
-                  backgroundColor:
-                    theme.primarySoft,
-                },
-              ]}
-            >
-              <UserRound
-                size={24}
-                color={theme.primary}
-              />
+            <View style={[styles.navIcon, { backgroundColor: theme.primarySoft }]}>
+              <UserRound size={24} color={theme.primary} />
             </View>
 
             <View style={styles.navText}>
-              <Text
-                style={[
-                  styles.navLabel,
-                  { color: theme.text },
-                ]}
-              >
-                User profile
-              </Text>
-              <Text
-                style={[
-                  styles.navHint,
-                  { color: theme.muted },
-                ]}
-              >
-                Nickname, email &amp; terms
-              </Text>
+              <Text style={[styles.navLabel, { color: theme.text }]}>User profile</Text>
+              <Text style={[styles.navHint, { color: theme.muted }]}>Nickname, email & terms</Text>
             </View>
 
-            <ChevronRight
-              size={20}
-              color={theme.muted}
-            />
+            <ChevronRight size={20} color={theme.muted} />
           </Pressable>
 
-          <View
-            style={[
-              styles.navDivider,
-              { backgroundColor: theme.border },
-            ]}
-          />
+          <View style={[styles.navDivider, { backgroundColor: theme.border }]} />
 
           <Pressable
-            onPress={() =>
-              router.push(SETTINGS_ROUTE)
-            }
+            onPress={() => router.push(SETTINGS_ROUTE)}
             accessibilityRole="button"
             accessibilityLabel="Open settings"
-            style={({ pressed }) => [
-              styles.navRow,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.navRow, pressed && styles.pressed]}
           >
-            <View
-              style={[
-                styles.navIcon,
-                {
-                  backgroundColor:
-                    theme.primarySoft,
-                },
-              ]}
-            >
-              <Settings
-                size={24}
-                color={theme.primary}
-              />
+            <View style={[styles.navIcon, { backgroundColor: theme.primarySoft }]}>
+              <Settings size={24} color={theme.primary} />
             </View>
 
             <View style={styles.navText}>
-              <Text
-                style={[
-                  styles.navLabel,
-                  { color: theme.text },
-                ]}
-              >
-                Settings
-              </Text>
-              <Text
-                style={[
-                  styles.navHint,
-                  { color: theme.muted },
-                ]}
-              >
-                Goals, notifications &amp; more
-              </Text>
+              <Text style={[styles.navLabel, { color: theme.text }]}>Settings</Text>
+              <Text style={[styles.navHint, { color: theme.muted }]}>Goals, theme, password & account</Text>
             </View>
 
-            <ChevronRight
-              size={20}
-              color={theme.muted}
-            />
+            <ChevronRight size={20} color={theme.muted} />
           </Pressable>
-        </View>
-
-        <Text
-          style={[
-            styles.sectionLabel,
-            { color: theme.muted },
-          ]}
-        >
-          Why people trust Syncate
-        </Text>
-
-        <View
-          style={[
-            styles.statsCard,
-            {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-              shadowColor: theme.shadow,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.statsHeading,
-              { color: theme.text },
-            ]}
-          >
-            Your data, by the numbers
-          </Text>
-          <Text
-            style={[
-              styles.statsBody,
-              { color: theme.muted },
-            ]}
-          >
-            Syncate only collects what your cycle
-            tracking actually needs — nothing gets
-            shared, sold, or shown to advertisers.
-          </Text>
-
-          <View style={styles.statsRow}>
-            {STATS.map((stat, index) => (
-              <View
-                key={stat.label}
-                style={styles.statItem}
-              >
-                {index > 0 ? (
-                  <View
-                    style={[
-                      styles.statDivider,
-                      {
-                        backgroundColor:
-                          theme.border,
-                      },
-                    ]}
-                  />
-                ) : null}
-
-                <Text
-                  style={[
-                    styles.statValue,
-                    { color: theme.primary },
-                  ]}
-                >
-                  {stat.value}
-                </Text>
-                <Text
-                  style={[
-                    styles.statLabel,
-                    { color: theme.muted },
-                  ]}
-                >
-                  {stat.label}
-                </Text>
-              </View>
-            ))}
-          </View>
         </View>
       </ScrollView>
 
-      <RegisteredBottomNav
-        activeItem="profile"
-      />
+      <RegisteredBottomNav activeItem="profile" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
+  safeArea: { flex: 1 },
   scrollContent: {
     width: "100%",
     maxWidth: 430,
     alignSelf: "center",
     paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 124,
+    paddingTop: 24,
+    paddingBottom: 120,
   },
-
-  headerBlock: {
-    marginBottom: 26,
-    alignItems: "center",
-  },
-
+  headerBlock: { alignItems: "center", marginBottom: 34 },
   headerIconOuter: {
-    width: 78,
-    height: 78,
-    borderRadius: 26,
+    width: 74,
+    height: 74,
+    borderRadius: 25,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
   },
-
   headerIconInner: {
-    width: 54,
-    height: 54,
+    width: 50,
+    height: 50,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
-
-  title: {
-    fontSize: 25,
-    fontWeight: "700",
-  },
-
-  subtitle: {
-    marginTop: 4,
-    fontSize: 13.5,
-    lineHeight: 18,
-  },
-
+  title: { fontSize: 28, lineHeight: 36, fontWeight: "800" },
+  subtitle: { marginTop: 4, fontSize: 13, lineHeight: 18 },
   sectionLabel: {
-    marginBottom: 10,
     marginLeft: 4,
-    fontSize: 12.5,
-    fontWeight: "700",
+    marginBottom: 9,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: "800",
+    letterSpacing: 1,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
   },
-
   navCard: {
-    marginBottom: 26,
     borderWidth: 1,
     borderRadius: 24,
-    paddingHorizontal: 18,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
+    paddingHorizontal: 16,
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
     elevation: 2,
   },
-
-  navRow: {
-    minHeight: 90,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
+  navRow: { minHeight: 82, flexDirection: "row", alignItems: "center" },
   navIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
   },
-
-  navText: {
-    flex: 1,
-    marginLeft: 15,
-  },
-
-  navLabel: {
-    fontSize: 17.5,
-    fontWeight: "700",
-  },
-
-  navHint: {
-    marginTop: 3,
-    fontSize: 12.5,
-  },
-
-  navDivider: {
-    height: StyleSheet.hairlineWidth,
-  },
-
-  statsCard: {
-    borderWidth: 1,
-    borderRadius: 24,
-    padding: 20,
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 20,
-    elevation: 2,
-  },
-
-  statsHeading: {
-    fontSize: 16.5,
-    fontWeight: "700",
-  },
-
-  statsBody: {
-    marginTop: 6,
-    fontSize: 12.5,
-    lineHeight: 19,
-  },
-
-  statsRow: {
-    marginTop: 18,
-    flexDirection: "row",
-  },
-
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-
-  statDivider: {
-    position: "absolute",
-    left: 0,
-    top: 4,
-    bottom: 4,
-    width: StyleSheet.hairlineWidth,
-  },
-
-  statValue: {
-    fontSize: 17,
-    fontWeight: "800",
-  },
-
-  statLabel: {
-    marginTop: 4,
-    fontSize: 10.5,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-
-  pressed: {
-    opacity: 0.72,
-  },
+  navText: { flex: 1, marginLeft: 13, paddingRight: 8 },
+  navLabel: { fontSize: 15.5, fontWeight: "700" },
+  navHint: { marginTop: 3, fontSize: 12, lineHeight: 17 },
+  navDivider: { height: StyleSheet.hairlineWidth, marginLeft: 59 },
+  pressed: { opacity: 0.72 },
 });
 
 export default RegisteredProfileScreen;

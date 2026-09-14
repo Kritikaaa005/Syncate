@@ -50,6 +50,10 @@ type MonthGridProps = {
   // with a lighter, undashed preview so it's visibly different from
   // "you tapped this" and is never a silent surprise after Save.
   impliedDates: ReadonlySet<string>;
+  // Saved period days staged for removal in this edit session. These are
+  // shown as neutral/dashed instead of menstrual so the person can see
+  // exactly what will disappear before pressing Save.
+  removedDates: ReadonlySet<string>;
   onSelectDate: (value: string) => void;
   editingEnabled: boolean;
   disabled?: boolean;
@@ -95,6 +99,7 @@ function MonthGrid({
   phaseTheme,
   selectedDates,
   impliedDates,
+  removedDates,
   onSelectDate,
   editingEnabled,
   disabled = false,
@@ -178,6 +183,9 @@ function MonthGrid({
             const isImplied =
               cell.inMonth && !isSelected && impliedDates.has(dateKey);
 
+            const isRemoved =
+              cell.inMonth && removedDates.has(dateKey);
+
             const isToday =
               cell.inMonth
               && isSameDay(normalizedDate, today);
@@ -225,15 +233,18 @@ function MonthGrid({
                         // as the menstrual color, regardless of what
                         // phase the day currently shows — this is the
                         // "tap it and it turns period color" behavior.
-                        cell.inMonth && (isSelected || isImplied)
-                          ? menstrualTheme.soft
-                          : cell.inMonth && phaseEntry
+                        isRemoved
+                          ? "transparent"
+                          : cell.inMonth && (isSelected || isImplied)
+                            ? menstrualTheme.soft
+                            : cell.inMonth && phaseEntry
                             ? phaseEntry.soft
                             : "transparent",
                     },
                     isToday
                     && !isSelected
-                    && !isImplied && {
+                    && !isImplied
+                    && !isRemoved && {
                       borderWidth: 1.5,
                       borderColor: theme.primary,
                     },
@@ -244,6 +255,12 @@ function MonthGrid({
                       shadowColor: theme.shadow,
                     },
                     isSelected && styles.selectedDayButton,
+                    isRemoved && {
+                      borderWidth: 2,
+                      borderStyle: "dashed",
+                      borderColor: theme.muted,
+                      opacity: 0.62,
+                    },
                     // Implied days get a lighter, dotted outline —
                     // deliberately less confident-looking than a
                     // direct tap, so it reads as "this will also be
@@ -268,9 +285,11 @@ function MonthGrid({
                       {
                         color: !cell.inMonth
                           ? theme.muted
-                          : isSelected || isImplied
-                            ? menstrualTheme.color
-                            : phaseEntry
+                          : isRemoved
+                            ? theme.muted
+                            : isSelected || isImplied
+                              ? menstrualTheme.color
+                              : phaseEntry
                               ? phaseEntry.color
                               : theme.text,
                         opacity: !cell.inMonth
@@ -279,7 +298,7 @@ function MonthGrid({
                             ? 0.62
                             : 1,
                         fontWeight:
-                          isSelected || isToday
+                          isSelected || isRemoved || isToday
                             ? "800"
                             : "500",
                       },
@@ -288,7 +307,7 @@ function MonthGrid({
                     {cell.date.getDate()}
                   </Text>
 
-                  {dayInfo?.source === "logged" && cell.inMonth && !isSelected && !isImplied ? (
+                  {dayInfo?.source === "logged" && cell.inMonth && !isSelected && !isImplied && !isRemoved ? (
                     <View
                       style={[
                         styles.loggedDot,

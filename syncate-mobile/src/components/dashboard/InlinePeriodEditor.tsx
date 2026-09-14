@@ -31,6 +31,8 @@ type CalendarEditBarProps = {
 
   // Currently staged (unsaved) selection for this edit session.
   pendingCount: number;
+  removalCount: number;
+  removalLabel: string | null;
   // The range that will ACTUALLY be saved — already widened to cover
   // an existing period being extended, if any. Always shown to the
   // person before they hit Save, never discovered after.
@@ -61,6 +63,8 @@ function CalendarEditBar({
   isEditMode,
   onToggleEditMode,
   pendingCount,
+  removalCount,
+  removalLabel,
   previewStart,
   previewEnd,
   impliedCount,
@@ -72,13 +76,16 @@ function CalendarEditBar({
   onSave,
   onClearSelection,
 }: CalendarEditBarProps) {
-  const hasSelection = pendingCount > 0 && previewStart !== null;
+  const hasSelection =
+    pendingCount > 0 && (previewStart !== null || removalCount > 0);
 
-  const rangeLabel = previewStart && previewEnd
-    ? previewStart === previewEnd
-      ? formatShortDate(previewStart)
-      : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
-    : "";
+  const rangeLabel = removalCount > 0
+    ? (removalLabel ?? "Saved period day")
+    : previewStart && previewEnd
+      ? previewStart === previewEnd
+        ? formatShortDate(previewStart)
+        : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
+      : "";
 
   return (
     <View
@@ -140,9 +147,11 @@ function CalendarEditBar({
                 >
                   {hasConflict
                     ? "CAN'T SAVE YET"
-                    : isEditingExisting
-                      ? "UPDATING PERIOD"
-                      : "NEW PERIOD"}
+                    : removalCount > 0
+                      ? "REMOVING PERIOD DAY"
+                      : isEditingExisting
+                        ? "UPDATING PERIOD"
+                        : "NEW PERIOD"}
                 </Text>
 
                 <Text style={[styles.rangeText, { color: theme.text }]}>
@@ -154,6 +163,12 @@ function CalendarEditBar({
                     These days overlap more than one existing period.
                     Untap some days, or save this as a smaller range
                     first.
+                  </Text>
+                ) : removalCount > 0 ? (
+                  <Text style={[styles.gapNote, { color: theme.muted }]}>
+                    {removalCount === 1
+                      ? "This saved period day will be removed after you save."
+                      : `${removalCount} saved period days will be removed after you save.`}
                   </Text>
                 ) : impliedCount > 0 ? (
                   <Text style={[styles.gapNote, { color: theme.muted }]}>
@@ -187,8 +202,8 @@ function CalendarEditBar({
                 </View>
               ) : (
                 <Text style={[styles.hintText, { color: theme.muted }]}>
-                  Tap any past date to mark it as a period day. Tap it
-                  again to remove it.
+                  Tap a logged period day to remove it, or tap another
+                  past date to add or extend your period.
                 </Text>
               )}
             </View>

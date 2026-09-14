@@ -84,10 +84,11 @@ class AddEmailSerializer(serializers.Serializer):
     """
     Validate an email being attached to the signed-in account.
 
-    A user who already has a verified email cannot change it through this
-    endpoint yet; email-change verification is a separate future Settings
-    feature. Re-submitting the same *unverified* email is allowed so the
-    existing verification flow can issue a fresh link if needed.
+    A verified email remains protected from direct replacement. An
+    unverified/pending email may be replaced so a typo does not trap the user
+    in a resend-only flow. The view issues a fresh verification token after
+    replacement; issue_email_verification_token() invalidates older unused
+    tokens for the account.
     """
 
     email = serializers.EmailField(
@@ -103,18 +104,11 @@ class AddEmailSerializer(serializers.Serializer):
         )
 
         normalized = value.strip().lower()
-        current_email = (user.email or "").strip().lower()
 
-        if current_email:
-            if profile.is_email_verified:
-                raise serializers.ValidationError(
-                    "A verified email address is already attached to this account."
-                )
-
-            if current_email != normalized:
-                raise serializers.ValidationError(
-                    "An unverified email is already attached. Email changes will be available later."
-                )
+        if (user.email or "").strip() and profile.is_email_verified:
+            raise serializers.ValidationError(
+                "A verified email address is already attached to this account."
+            )
 
         if (
             User.objects.filter(

@@ -16,7 +16,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileSummaryCard from "@/components/profile/ProfileSummaryCard";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import useUserProfile from "@/hooks/useUserProfile";
 
@@ -24,10 +23,7 @@ const TERMS_ROUTE =
   "/dashboard/profile/terms" as Href;
 
 function ProfileAccountScreen() {
-  const { isDark } = useTheme();
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const { colors: theme } = useTheme();
 
   const {
     profile,

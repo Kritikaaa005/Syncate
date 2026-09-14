@@ -10,13 +10,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import RegisteredBottomNav from "@/components/dashboard/RegisteredBottomNav";
 import ArticleCard from "@/components/guest/education/ArticleCard";
-import { guestTheme } from "@/constants/guestTheme";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useInsightsArticles } from "@/hooks/useInsightsArticles";
 
 function InsightsScreen() {
-  const { isDark } = useTheme();
-  const t = isDark ? guestTheme.mode.dark : guestTheme.mode.light;
+  const { colors: t } = useTheme();
 
   const { categories, sections, loading } = useInsightsArticles();
 

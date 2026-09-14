@@ -7,16 +7,11 @@ import {
   Palette,
   Settings,
   Target,
-  Trash2,
+  UserX,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { router, type Href } from "expo-router";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { GuestThemeColors } from "@/constants/guestTheme";
 
@@ -25,10 +20,6 @@ type SettingsItem = {
   subtitle: string;
   icon: LucideIcon;
   destructive?: boolean;
-  // Present => the row is a real, tappable navigation target and
-  // shows a chevron instead of "Soon". Absent => still a placeholder,
-  // matching how every row here behaved before password/period-details
-  // were built.
   href?: Href;
 };
 
@@ -37,6 +28,7 @@ const ITEMS: SettingsItem[] = [
     title: "My goal",
     subtitle: "Change your tracking goal",
     icon: Target,
+    href: "/profile/my-goal" as Href,
   },
   {
     title: "Notifications",
@@ -52,6 +44,7 @@ const ITEMS: SettingsItem[] = [
     title: "Profile theme",
     subtitle: "Change your Syncate theme",
     icon: Palette,
+    href: "/profile/theme" as Href,
   },
   {
     title: "Change password",
@@ -66,10 +59,11 @@ const ITEMS: SettingsItem[] = [
     href: "/dashboard/profile/period-details" as Href,
   },
   {
-    title: "Delete account",
-    subtitle: "30-day deletion or permanent deletion",
-    icon: Trash2,
+    title: "Account management",
+    subtitle: "Deactivate or delete your account",
+    icon: UserX,
     destructive: true,
+    href: "/profile/account-management" as Href,
   },
 ];
 
@@ -77,9 +71,7 @@ type ProfileSettingsCardProps = {
   theme: GuestThemeColors;
 };
 
-function ProfileSettingsCard({
-  theme,
-}: ProfileSettingsCardProps) {
+function ProfileSettingsCard({ theme }: ProfileSettingsCardProps) {
   return (
     <View
       style={[
@@ -92,127 +84,57 @@ function ProfileSettingsCard({
       ]}
     >
       <View style={styles.headingRow}>
-        <View
-          style={[
-            styles.headingIcon,
-            {
-              backgroundColor:
-                theme.primarySoft,
-            },
-          ]}
-        >
-          <Settings
-            size={18}
-            color={theme.primary}
-          />
+        <View style={[styles.headingIcon, { backgroundColor: theme.primarySoft }]}>
+          <Settings size={18} color={theme.primary} />
         </View>
-        <Text
-          style={[
-            styles.cardTitle,
-            { color: theme.text },
-          ]}
-        >
-          Settings
-        </Text>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>Settings</Text>
       </View>
 
       {ITEMS.map((item, index) => {
         const Icon = item.icon;
-        const itemColor = item.destructive
-          ? theme.primary
-          : theme.text;
         const isNavigable = Boolean(item.href);
+        const itemColor = item.destructive ? "#C62828" : theme.text;
+        const iconColor = item.destructive ? "#C62828" : theme.primary;
+        const iconBackground = item.destructive ? "#FDECEC" : theme.primarySoft;
 
         return (
           <View key={item.title}>
             {index > 0 ? (
-              <View
-                style={[
-                  styles.divider,
-                  {
-                    backgroundColor:
-                      theme.border,
-                  },
-                ]}
-              />
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
             ) : null}
 
             <Pressable
-              onPress={
-                item.href
-                  ? () => router.push(item.href as Href)
-                  : undefined
-              }
+              onPress={item.href ? () => router.push(item.href as Href) : undefined}
               disabled={!isNavigable}
               accessibilityRole={isNavigable ? "button" : undefined}
               accessibilityLabel={
-                isNavigable
-                  ? item.title
-                  : `${item.title}. Coming soon.`
+                isNavigable ? item.title : `${item.title}. Coming soon.`
               }
               style={({ pressed }) => [
                 styles.itemRow,
                 pressed && isNavigable && styles.itemRowPressed,
               ]}
             >
-              <View
-                style={[
-                  styles.itemIcon,
-                  {
-                    backgroundColor:
-                      theme.primarySoft,
-                  },
-                ]}
-              >
-                <Icon
-                  size={18}
-                  color={theme.primary}
-                />
+              <View style={[styles.itemIcon, { backgroundColor: iconBackground }]}>
+                <Icon size={18} color={iconColor} />
               </View>
 
               <View style={styles.itemText}>
-                <Text
-                  style={[
-                    styles.itemTitle,
-                    { color: itemColor },
-                  ]}
-                >
-                  {item.title}
-                </Text>
-                <Text
-                  style={[
-                    styles.itemSubtitle,
-                    { color: theme.muted },
-                  ]}
-                >
+                <Text style={[styles.itemTitle, { color: itemColor }]}>{item.title}</Text>
+                <Text style={[styles.itemSubtitle, { color: theme.muted }]}>
                   {item.subtitle}
                 </Text>
               </View>
 
               {!isNavigable ? (
-                <View
-                  style={[
-                    styles.soonBadge,
-                    {
-                      backgroundColor:
-                        theme.primarySoft,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.soonText,
-                      { color: theme.primary },
-                    ]}
-                  >
-                    Soon
-                  </Text>
+                <View style={[styles.soonBadge, { backgroundColor: theme.primarySoft }]}>
+                  <Text style={[styles.soonText, { color: theme.primary }]}>Soon</Text>
                 </View>
               ) : null}
 
               <ChevronRight
                 size={17}
-                color={theme.muted}
+                color={item.destructive ? "#C62828" : theme.muted}
                 opacity={isNavigable ? 0.75 : 0.45}
               />
             </Pressable>
@@ -229,22 +151,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 24,
     padding: 18,
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
+    shadowOffset: { width: 0, height: 7 },
     shadowOpacity: 0.05,
     shadowRadius: 18,
     elevation: 2,
   },
-
   headingRow: {
     marginBottom: 9,
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
   },
-
   headingIcon: {
     width: 34,
     height: 34,
@@ -252,27 +169,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  cardTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-  },
-
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 48,
-  },
-
-  itemRow: {
-    minHeight: 68,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  itemRowPressed: {
-    opacity: 0.7,
-  },
-
+  cardTitle: { fontSize: 17, fontWeight: "700" },
+  divider: { height: StyleSheet.hairlineWidth, marginLeft: 48 },
+  itemRow: { minHeight: 68, flexDirection: "row", alignItems: "center" },
+  itemRowPressed: { opacity: 0.7 },
   itemIcon: {
     width: 36,
     height: 36,
@@ -280,35 +180,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  itemText: {
-    flex: 1,
-    marginLeft: 12,
-    paddingRight: 8,
-  },
-
-  itemTitle: {
-    fontSize: 13.5,
-    fontWeight: "600",
-  },
-
-  itemSubtitle: {
-    marginTop: 3,
-    fontSize: 11.5,
-    lineHeight: 16,
-  },
-
-  soonBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-
-  soonText: {
-    fontSize: 9.5,
-    fontWeight: "700",
-    letterSpacing: 0.2,
-  },
+  itemText: { flex: 1, marginLeft: 12, paddingRight: 8 },
+  itemTitle: { fontSize: 13.5, fontWeight: "600" },
+  itemSubtitle: { marginTop: 3, fontSize: 11.5, lineHeight: 16 },
+  soonBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  soonText: { fontSize: 9.5, fontWeight: "700", letterSpacing: 0.2 },
 });
 
 export default ProfileSettingsCard;

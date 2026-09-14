@@ -2,6 +2,7 @@ import {
   ChevronRight,
   FileText,
   Mail,
+  PencilLine,
   Plus,
   UserRound,
 } from "lucide-react-native";
@@ -41,7 +42,7 @@ function ProfileSummaryCard({
   onAddOrResendEmail,
   onTermsPress,
 }: ProfileSummaryCardProps) {
-  const [addingEmail, setAddingEmail] =
+  const [editingEmail, setEditingEmail] =
     useState(false);
 
   const nickname =
@@ -55,7 +56,7 @@ function ProfileSummaryCard({
     const result =
       await onAddOrResendEmail(email);
 
-    setAddingEmail(false);
+    setEditingEmail(false);
 
     return result;
   };
@@ -247,73 +248,64 @@ function ProfileSummaryCard({
 
         {!hasEmail ? (
           <Pressable
-            onPress={() =>
-              setAddingEmail(true)
-            }
+            onPress={() => setEditingEmail(true)}
             accessibilityRole="button"
             accessibilityLabel="Add email address"
             style={({ pressed }) => [
               styles.addButton,
-              {
-                backgroundColor:
-                  theme.primarySoft,
-              },
+              { backgroundColor: theme.primarySoft },
               pressed && styles.pressed,
             ]}
           >
-            <Plus
-              size={16}
-              color={theme.primary}
-            />
-            <Text
-              style={[
-                styles.addButtonText,
-                { color: theme.primary },
-              ]}
-            >
-              Add
-            </Text>
+            <Plus size={16} color={theme.primary} />
+            <Text style={[styles.addButtonText, { color: theme.primary }]}>Add</Text>
           </Pressable>
         ) : !profile.is_email_verified ? (
-          <Pressable
-            onPress={() => {
-              void onAddOrResendEmail(
-                profile.email
-              ).catch((error) => {
-                Alert.alert(
-                  "Couldn't send verification",
-                  error instanceof Error
-                    ? error.message
-                    : "Please try again."
-                );
-              });
-            }}
-            disabled={savingEmail}
-            accessibilityRole="button"
-            accessibilityLabel="Resend verification email"
-            style={styles.resendButton}
-          >
-            <Text
-              style={[
-                styles.resendText,
-                { color: theme.primary },
+          <View style={styles.pendingActions}>
+            <Pressable
+              onPress={() => setEditingEmail(true)}
+              disabled={savingEmail}
+              accessibilityRole="button"
+              accessibilityLabel="Change unverified email address"
+              style={({ pressed }) => [
+                styles.smallActionButton,
+                { backgroundColor: theme.primarySoft },
+                pressed && styles.pressed,
               ]}
             >
-              {savingEmail
-                ? "Sending..."
-                : "Resend"}
-            </Text>
-          </Pressable>
+              <PencilLine size={14} color={theme.primary} />
+              <Text style={[styles.smallActionText, { color: theme.primary }]}>Change</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                void onAddOrResendEmail(profile.email).catch((error) => {
+                  Alert.alert(
+                    "Couldn't send verification",
+                    error instanceof Error ? error.message : "Please try again."
+                  );
+                });
+              }}
+              disabled={savingEmail}
+              accessibilityRole="button"
+              accessibilityLabel="Resend verification email"
+              style={styles.resendButton}
+            >
+              <Text style={[styles.resendText, { color: theme.primary }]}>
+                {savingEmail ? "Sending..." : "Resend"}
+              </Text>
+            </Pressable>
+          </View>
         ) : null}
       </View>
 
-      {addingEmail && !hasEmail ? (
+      {editingEmail && (!hasEmail || !profile.is_email_verified) ? (
         <AddEmailForm
           theme={theme}
           submitting={savingEmail}
-          onCancel={() =>
-            setAddingEmail(false)
-          }
+          initialEmail={hasEmail ? profile.email : ""}
+          mode={hasEmail ? "change" : "add"}
+          onCancel={() => setEditingEmail(false)}
           onSubmit={async (email) => {
             await handleEmailSubmit(email);
           }}
@@ -517,8 +509,27 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
+  pendingActions: {
+    alignItems: "flex-end",
+    gap: 4,
+  },
+
+  smallActionButton: {
+    minHeight: 32,
+    borderRadius: 10,
+    paddingHorizontal: 9,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+
+  smallActionText: {
+    fontSize: 11.5,
+    fontWeight: "700",
+  },
+
   resendButton: {
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingLeft: 8,
   },
 

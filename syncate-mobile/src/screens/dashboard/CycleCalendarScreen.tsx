@@ -1,3 +1,16 @@
+// LOCATION: syncate-mobile/src/screens/dashboard/CycleCalendarScreen.tsx
+//
+// Continuous registered-user cycle calendar. This screen orchestrates
+// virtualized month scrolling, edit mode and inline period saving.
+// Month rendering stays in MonthGrid and all phase calculations remain
+// backend-owned through GET /me/calendar/?year=.
+//
+// Calendar edits distinguish a new cycle start from continuation of an
+// existing period. A single new start is saved without an invented end
+// date; later taps can extend that same PeriodLog instead of creating a
+// second cycle anchor. Early starts are confirmed before the old estimate
+// is replaced by backend-recalculated phases.
+
 import { router } from "expo-router";
 import { ArrowLeft } from "lucide-react-native";
 import {
@@ -38,6 +51,7 @@ import useCycleCalendar from "@/hooks/useCycleCalendar";
 import useDashboardCycle from "@/hooks/useDashboardCycle";
 import usePeriodLogs from "@/hooks/usePeriodLogs";
 import {
+  deletePeriod,
   logPeriod,
   updatePeriod,
 } from "@/services/cycleService";
@@ -48,6 +62,7 @@ import {
 } from "@/utils/calendarUtils";
 import {
   getLatestPeriod,
+  getPeriodContainingDate,
   getPeriodEditCandidates,
   shouldPromptForEarlyPeriodStart,
 } from "@/utils/periodCalendarEditUtils";
@@ -130,6 +145,7 @@ function CycleCalendarScreen() {
   // the whole fix — it used to be a single "proposed start date".
   // Now any number of days can be tapped on and off before saving.
   const [pendingDates, setPendingDates] = useState<string[]>([]);
+  const [pendingRemovalDates, setPendingRemovalDates] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [savedRangeLabel, setSavedRangeLabel] = useState<string | null>(
@@ -178,6 +194,28 @@ function CycleCalendarScreen() {
   // More than one candidate is ambiguous, so never guess.
   const hasConflict = editCandidates.length > 1;
   const targetPeriod = hasConflict ? null : (editCandidates[0] ?? null);
+
+  const removalTargetPeriod = useMemo(() => {
+    if (pendingRemovalDates.length === 0) {
+      return null;
+    }
+
+    const matches = pendingRemovalDates
+      .map((dateValue) => getPeriodContainingDate(periodLogs, dateValue))
+      .filter((period): period is NonNullable<typeof period> => period !== null);
+
+    if (matches.length !== pendingRemovalDates.length) {
+      return null;
+    }
+
+    const firstId = matches[0]?.id;
+    return matches.every((period) => period.id === firstId)
+      ? matches[0]
+      : null;
+  }, [pendingRemovalDates, periodLogs]);
+
+  const removalHasConflict =
+    pendingRemovalDates.length > 0 && removalTargetPeriod === null;
 
   const tappedStart = pendingDates[0] ?? null;
   const tappedEnd = pendingDates[pendingDates.length - 1] ?? null;
@@ -242,6 +280,7 @@ function CycleCalendarScreen() {
     }
 
     setPendingDates([]);
+    setPendingRemovalDates([]);
     setSaveError("");
     setSavedRangeLabel(null);
   }, [isSubmitting]);
@@ -281,15 +320,76 @@ function CycleCalendarScreen() {
     );
   }, []);
 
+  const stageRemovalToggle = useCallback((dateValue: string) => {
+    setSaveError("");
+    setSavedRangeLabel(null);
+
+    setPendingRemovalDates((current) =>
+      current.includes(dateValue)
+        ? current.filter((existing) => existing !== dateValue)
+        : [...current, dateValue].sort()
+    );
+  }, []);
+
   const handleDateSelect = useCallback(
     (dateValue: string) => {
       if (!isEditMode || isSubmitting) {
         return;
       }
 
-      // Untapping a staged date never needs confirmation.
+      if (pendingRemovalDates.includes(dateValue)) {
+        stageRemovalToggle(dateValue);
+        return;
+      }
+
       if (pendingDates.includes(dateValue)) {
         stageDateToggle(dateValue);
+        return;
+      }
+
+      const dayInfo = daysByDate.get(dateValue);
+
+      // A saved/actual period day has different semantics from an estimated
+      // menstrual day. Tapping a logged day stages a real removal instead
+      // of widening the same PeriodLog back over that date.
+      if (dayInfo?.source === "logged") {
+        if (pendingDates.length > 0) {
+          setSaveError(
+            "Save or clear the dates you are adding before removing a logged period day."
+          );
+          return;
+        }
+
+        const containingPeriod = getPeriodContainingDate(periodLogs, dateValue);
+        if (!containingPeriod) {
+          setSaveError("Could not find the saved period for that date.");
+          return;
+        }
+
+        const periodEnd = containingPeriod.end_date ?? containingPeriod.start_date;
+        const isEdgeDate =
+          dateValue === containingPeriod.start_date || dateValue === periodEnd;
+
+        if (!isEdgeDate) {
+          setSaveError(
+            "A saved period is one continuous range. Remove days from the beginning or end rather than creating a gap in the middle."
+          );
+          return;
+        }
+
+        if (pendingRemovalDates.length > 0 && removalTargetPeriod?.id !== containingPeriod.id) {
+          setSaveError("Save or clear the current removal before editing another period.");
+          return;
+        }
+
+        stageRemovalToggle(dateValue);
+        return;
+      }
+
+      if (pendingRemovalDates.length > 0) {
+        setSaveError(
+          "Save or clear the period day you are removing before adding another date."
+        );
         return;
       }
 
@@ -338,21 +438,28 @@ function CycleCalendarScreen() {
       stageDateToggle(dateValue);
     },
     [
+      daysByDate,
       isEditMode,
       isSubmitting,
       lastPeriod?.next_period_date,
       pendingDates,
+      pendingRemovalDates,
       periodLogs,
+      removalTargetPeriod?.id,
       stageDateToggle,
+      stageRemovalToggle,
     ]
   );
 
   const handleSave = async () => {
-    if (!previewStart || !previewEnd || isSubmitting || !isEditMode) {
+    const hasRemoval = pendingRemovalDates.length > 0;
+    const hasAddition = Boolean(previewStart && previewEnd);
+
+    if ((!hasRemoval && !hasAddition) || isSubmitting || !isEditMode) {
       return;
     }
 
-    if (hasConflict) {
+    if (hasConflict || removalHasConflict) {
       setSaveError(
         "Your selected days overlap more than one existing period. Please adjust your selection."
       );
@@ -363,19 +470,45 @@ function CycleCalendarScreen() {
     setSaveError("");
 
     try {
-      if (targetPeriod) {
+      if (hasRemoval && removalTargetPeriod) {
+        const originalStart = removalTargetPeriod.start_date;
+        const originalEnd =
+          removalTargetPeriod.end_date ?? removalTargetPeriod.start_date;
+        const originalDates = enumerateDateRange(originalStart, originalEnd);
+        const removalSet = new Set(pendingRemovalDates);
+        const remainingDates = originalDates.filter((dateValue) => !removalSet.has(dateValue));
+
+        if (remainingDates.length === 0) {
+          await deletePeriod(removalTargetPeriod.id);
+        } else {
+          const remainingStart = remainingDates[0];
+          const remainingEnd = remainingDates[remainingDates.length - 1];
+          const expectedRemainingDates = enumerateDateRange(remainingStart, remainingEnd);
+
+          if (expectedRemainingDates.length !== remainingDates.length) {
+            throw new Error(
+              "A period must stay continuous. Remove days from the beginning or end."
+            );
+          }
+
+          await updatePeriod(removalTargetPeriod.id, {
+            start_date: remainingStart,
+            end_date: remainingEnd,
+          });
+        }
+      } else if (targetPeriod && previewStart && previewEnd) {
         await updatePeriod(targetPeriod.id, {
           start_date: previewStart,
           end_date: previewEnd,
         });
-      } else if (previewStart === previewEnd) {
+      } else if (previewStart && previewEnd && previewStart === previewEnd) {
         // Day 1 is a fact; the end date is not known yet. Leaving end_date
         // null lets the backend show the user's usual remaining period days
         // as estimates. If bleeding continues, a later tap extends THIS row.
         await logPeriod({
           start_date: previewStart,
         });
-      } else {
+      } else if (previewStart && previewEnd) {
         await logPeriod({
           start_date: previewStart,
           end_date: previewEnd,
@@ -390,12 +523,21 @@ function CycleCalendarScreen() {
         reloadDashboard(),
       ]);
 
-      setSavedRangeLabel(
-        previewStart === previewEnd
-          ? formatShortDate(previewStart)
-          : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
-      );
+      if (hasRemoval) {
+        setSavedRangeLabel(
+          pendingRemovalDates.length === 1
+            ? `removed ${formatShortDate(pendingRemovalDates[0])}`
+            : `removed ${pendingRemovalDates.length} days`
+        );
+      } else if (previewStart && previewEnd) {
+        setSavedRangeLabel(
+          previewStart === previewEnd
+            ? formatShortDate(previewStart)
+            : `${formatShortDate(previewStart)} – ${formatShortDate(previewEnd)}`
+        );
+      }
       setPendingDates([]);
+      setPendingRemovalDates([]);
     } catch (error) {
       setSaveError(
         error instanceof Error
@@ -477,6 +619,21 @@ function CycleCalendarScreen() {
     [pendingDates]
   );
 
+  const removedDatesSet = useMemo(
+    () => new Set(pendingRemovalDates),
+    [pendingRemovalDates]
+  );
+
+  const removalLabel = useMemo(() => {
+    if (pendingRemovalDates.length === 0) return null;
+    if (pendingRemovalDates.length === 1) {
+      return formatShortDate(pendingRemovalDates[0]);
+    }
+    return `${formatShortDate(pendingRemovalDates[0])} – ${formatShortDate(
+      pendingRemovalDates[pendingRemovalDates.length - 1]
+    )}`;
+  }, [pendingRemovalDates]);
+
   const renderMonth = useCallback(
     ({ item }: ListRenderItemInfo<MonthItem>) => (
       <MonthGrid
@@ -486,6 +643,7 @@ function CycleCalendarScreen() {
         phaseTheme={phaseTheme}
         selectedDates={pendingDatesSet}
         impliedDates={impliedDates}
+        removedDates={removedDatesSet}
         onSelectDate={handleDateSelect}
         editingEnabled={isEditMode}
         disabled={periodsLoading || isSubmitting}
@@ -499,6 +657,7 @@ function CycleCalendarScreen() {
       isSubmitting,
       pendingDatesSet,
       periodsLoading,
+      removedDatesSet,
       phaseTheme,
       theme,
     ]
@@ -660,12 +819,14 @@ function CycleCalendarScreen() {
           bottomInset={insets.bottom}
           isEditMode={isEditMode}
           onToggleEditMode={handleEditToggle}
-          pendingCount={pendingDates.length}
+          pendingCount={pendingDates.length + pendingRemovalDates.length}
+          removalCount={pendingRemovalDates.length}
+          removalLabel={removalLabel}
           previewStart={previewStart}
           previewEnd={previewEnd}
           impliedCount={impliedDates.size}
           isEditingExisting={targetPeriod !== null}
-          hasConflict={hasConflict}
+          hasConflict={hasConflict || removalHasConflict}
           isSubmitting={isSubmitting}
           errorMessage={saveError}
           savedRangeLabel={savedRangeLabel}

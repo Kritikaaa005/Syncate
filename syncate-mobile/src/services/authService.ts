@@ -1,6 +1,7 @@
+import { Platform } from "react-native";
+
 import { API_BASE_URL } from "@/utils/getApiBaseUrl";
 import { saveTokens } from "@/utils/tokenStorage";
-import { triggerAutomaticPeriodSync } from "@/services/periodSyncService";
 
 type TokenResponse = { access: string; refresh: string };
 
@@ -10,22 +11,62 @@ export class ScheduledDeletionLoginError extends Error {
   }
 }
 
-async function credentialRequest(path: string, email: string, password: string): Promise<TokenResponse> {
+async function triggerPostLoginPeriodSync(): Promise<void> {
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  try {
+    const { triggerAutomaticPeriodSync } = await import(
+      "@/services/periodSyncService"
+    );
+
+    await triggerAutomaticPeriodSync();
+  } catch {
+    // Signing in succeeded already. A local-sync problem must not turn a
+    // successful login into an apparent login failure.
+    if (__DEV__) {
+      console.warn("Period synchronization will retry later.");
+    }
+  }
+}
+
+async function credentialRequest(
+  path: string,
+  email: string,
+  password: string
+): Promise<TokenResponse> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ email, password }),
   });
+
   const data = (await response.json()) as Record<string, unknown>;
+
   if (!response.ok) {
-    if (data.code === "ACCOUNT_SCHEDULED_FOR_DELETION" && typeof data.deletion_due_at === "string") {
+    if (
+      data.code === "ACCOUNT_SCHEDULED_FOR_DELETION"
+      && typeof data.deletion_due_at === "string"
+    ) {
       throw new ScheduledDeletionLoginError(data.deletion_due_at);
     }
-    throw new Error(typeof data.detail === "string" ? data.detail : "Sign in failed.");
+
+    throw new Error(
+      typeof data.detail === "string" ? data.detail : "Sign in failed."
+    );
   }
+
   const tokens = data as TokenResponse;
   await saveTokens(tokens.access, tokens.refresh);
-  void triggerAutomaticPeriodSync();
+
+  // Fire-and-forget: authentication is complete even if local period sync
+  // cannot run on this device yet.
+  void triggerPostLoginPeriodSync();
+
   return tokens;
 }
 

@@ -86,6 +86,18 @@ export function getPeriodEditCandidates(
   );
 }
 
+
+export function getPeriodContainingDate(
+  periods: PeriodLogResponse[],
+  dateValue: string
+): PeriodLogResponse | null {
+  const matches = periods.filter((period) =>
+    periodOverlapsRange(period, dateValue, dateValue)
+  );
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
 export function getLatestPeriod(
   periods: PeriodLogResponse[]
 ): PeriodLogResponse | null {
