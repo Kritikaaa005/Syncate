@@ -1,34 +1,83 @@
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+// LOCATION: syncate-mobile/src/app/_layout.tsx
+//
+// The global brand header now participates in normal layout flow.
+// It no longer sits absolutely on top of dashboard/guest content.
 
-import { guestTheme } from "@/constants/guestTheme";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import {
+  Stack,
+  usePathname,
+} from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  StyleSheet,
+  View,
+} from "react-native";
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+} from "react-native-safe-area-context";
+
+import GlobalBrandHeader from "@/components/system/GlobalBrandHeader";
 import { PeriodSyncCoordinator } from "@/components/system/PeriodSyncCoordinator";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import {
+  ThemeProvider,
+  useTheme,
+} from "@/contexts/ThemeContext";
 
 function AppNavigator() {
-  const { isDark } = useTheme();
-  const theme = isDark
-    ? guestTheme.mode.dark
-    : guestTheme.mode.light;
+  const pathname = usePathname();
+
+  const {
+    isDark,
+    colors,
+  } = useTheme();
+
+  // Splash keeps the full centered logo and should not also show a header.
+  const hideGlobalHeader =
+    pathname === "/";
 
   return (
-    <>
-      <StatusBar style={isDark ? "light" : "dark"} />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          // Without this, the native stack's own container
-          // shows through (usually white / black) for a frame
-          // during push/pop transitions — that's the "flash"
-          // on back navigation. Matching it to the app
-          // background makes the transition invisible.
-          contentStyle: {
-            backgroundColor: theme.background,
-          },
-        }}
+    <View
+      style={[
+        styles.root,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
+      <StatusBar
+        style={
+          isDark ? "light" : "dark"
+        }
       />
-    </>
+
+      {!hideGlobalHeader ? (
+        <SafeAreaView
+          edges={["top"]}
+          style={{
+            backgroundColor:
+              colors.background,
+          }}
+        >
+          <GlobalBrandHeader />
+        </SafeAreaView>
+      ) : null}
+
+      <View style={styles.navigator}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+
+            contentStyle: {
+              backgroundColor:
+                colors.background,
+            },
+          }}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -36,9 +85,21 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <PeriodSyncCoordinator />
-        <AppNavigator />
+        <LanguageProvider>
+          <PeriodSyncCoordinator />
+          <AppNavigator />
+        </LanguageProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+
+  navigator: {
+    flex: 1,
+  },
+});

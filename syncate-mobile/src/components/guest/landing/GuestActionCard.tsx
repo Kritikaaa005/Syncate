@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { GuestAction } from "@/constants/guestLandingData";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 type GuestActionCardProps = {
@@ -10,12 +11,20 @@ type GuestActionCardProps = {
 
 function GuestActionCard({ action }: GuestActionCardProps) {
   const { isDark, colors } = useTheme();
+  const { language } = useLanguage();
   const Icon = action.icon;
+
+  const title = language === "ne" ? action.titleNe : action.title;
+  const description =
+    language === "ne" ? action.descriptionNe : action.description;
+  const buttonText =
+    language === "ne" ? action.buttonTextNe : action.buttonText;
 
   return (
     <Pressable
       onPress={() => router.push(action.to)}
       accessibilityRole="button"
+      accessibilityLabel={`${title}. ${buttonText}`}
       style={({ pressed }) => [
         styles.card,
         {
@@ -44,7 +53,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        {action.title}
+        {title}
       </Text>
 
       <View
@@ -64,7 +73,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        {action.description}
+        {description}
       </Text>
 
       <View
@@ -75,7 +84,7 @@ function GuestActionCard({ action }: GuestActionCardProps) {
           },
         ]}
       >
-        <Text style={styles.buttonText}>{action.buttonText}</Text>
+        <Text style={styles.buttonText}>{buttonText}</Text>
       </View>
     </Pressable>
   );
@@ -110,7 +119,7 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     textAlign: "center",
     fontSize: 16,
-    lineHeight: 21,
+    lineHeight: 23,
     fontWeight: "600",
   },
 
@@ -123,11 +132,11 @@ const styles = StyleSheet.create({
 
   description: {
     width: "100%",
-    maxWidth: 300,
+    maxWidth: 310,
     marginBottom: 15,
     textAlign: "center",
     fontSize: 12.5,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 
   button: {
@@ -143,8 +152,9 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontSize: 12.5,
-    lineHeight: 16,
+    lineHeight: 18,
     fontWeight: "600",
+    textAlign: "center",
   },
 });
 

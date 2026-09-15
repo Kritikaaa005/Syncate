@@ -5,19 +5,38 @@ import {
 
 import { ArrowRight } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+
 import { moreFeatures } from "@/constants/guestLandingData";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import GuestFeatureItem from "./GuestFeatureItem";
 
 const LEARN_MORE_ROUTE =
   "/guest/learn-more" as Href;
 
+const COPY = {
+  en: {
+    headingStart: "More with",
+    subheading: "Create a free account to unlock powerful features.",
+    createAccount: "Create Free Account",
+    learnMore: "Learn more",
+  },
+  ne: {
+    headingStart: "Syncate सँग अझ धेरै",
+    subheading: "निःशुल्क खाता बनाएर थप सुविधाहरू प्रयोग गर्नुहोस्।",
+    createAccount: "निःशुल्क खाता बनाउनुहोस्",
+    learnMore: "थप जान्नुहोस्",
+  },
+} as const;
+
 function GuestMoreFeatures() {
   const { isDark, colors } = useTheme();
+  const { language } = useLanguage();
 
   const textColor = isDark ? "#F3EDF1" : "#1E1730";
   const mutedColor = isDark ? "#B7ACB8" : "#8D8A99";
   const primaryColor = colors.primary;
+  const copy = COPY[language];
 
   return (
     <View
@@ -29,25 +48,48 @@ function GuestMoreFeatures() {
         },
       ]}
     >
-      <Text style={[styles.heading, { color: textColor }]}>
-        More with{" "}
-        <Text style={[styles.highlight, { color: primaryColor }]}>Syncate</Text>
-      </Text>
+      {language === "ne" ? (
+        <Text style={[styles.heading, { color: textColor }]}>
+          <Text style={[styles.highlight, { color: primaryColor }]}>
+            Syncate
+          </Text>
+          {" सँग अझ धेरै"}
+        </Text>
+      ) : (
+        <Text style={[styles.heading, { color: textColor }]}>
+          {copy.headingStart}{" "}
+          <Text style={[styles.highlight, { color: primaryColor }]}>
+            Syncate
+          </Text>
+        </Text>
+      )}
 
       <Text style={[styles.subheading, { color: mutedColor }]}>
-        Create a free account to unlock powerful features.
+        {copy.subheading}
       </Text>
 
       <View style={styles.featureGrid}>
-        {moreFeatures.map((feature) => (
-          <View key={feature.label} style={styles.featureGridItem}>
-            <GuestFeatureItem feature={feature} />
-          </View>
-        ))}
+        {moreFeatures.map((feature) => {
+          const displayFeature =
+            language === "ne"
+              ? {
+                  ...feature,
+                  label: feature.labelNe,
+                }
+              : feature;
+
+          return (
+            <View key={feature.label} style={styles.featureGridItem}>
+              <GuestFeatureItem feature={displayFeature} />
+            </View>
+          );
+        })}
       </View>
 
       <Pressable
         onPress={() => router.push("/signup")}
+        accessibilityRole="button"
+        accessibilityLabel={copy.createAccount}
         style={({ pressed }) => [
           styles.ctaButton,
           {
@@ -57,23 +99,23 @@ function GuestMoreFeatures() {
           pressed && styles.pressedScale,
         ]}
       >
-        <Text style={styles.ctaButtonText}>Create Free Account</Text>
+        <Text style={styles.ctaButtonText}>{copy.createAccount}</Text>
       </Pressable>
 
       <View style={styles.learnMoreRow}>
         <Pressable
-onPress={() => {
-  router.push(
-    LEARN_MORE_ROUTE
-  );
-}}
+          onPress={() => {
+            router.push(LEARN_MORE_ROUTE);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={copy.learnMore}
           style={({ pressed }) => [
             styles.learnMoreLink,
             pressed && styles.learnMorePressed,
           ]}
         >
           <Text style={[styles.learnMoreText, { color: primaryColor }]}>
-            Learn more
+            {copy.learnMore}
           </Text>
 
           <ArrowRight size={14} color={primaryColor} />
@@ -96,7 +138,7 @@ const styles = StyleSheet.create({
   heading: {
     marginBottom: 6,
     fontSize: 21,
-    lineHeight: 27,
+    lineHeight: 29,
     fontWeight: "600",
   },
 
@@ -107,7 +149,7 @@ const styles = StyleSheet.create({
   subheading: {
     marginBottom: 18,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 21,
   },
 
   featureGrid: {
@@ -149,8 +191,9 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 20,
     fontWeight: "600",
+    textAlign: "center",
   },
 
   learnMoreRow: {
@@ -173,7 +216,7 @@ const styles = StyleSheet.create({
 
   learnMoreText: {
     fontSize: 14,
-    lineHeight: 18,
+    lineHeight: 20,
     fontWeight: "500",
   },
 });

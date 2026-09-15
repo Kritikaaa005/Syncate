@@ -107,9 +107,7 @@ function ProfileSettingsCard({ theme }: ProfileSettingsCardProps) {
               onPress={item.href ? () => router.push(item.href as Href) : undefined}
               disabled={!isNavigable}
               accessibilityRole={isNavigable ? "button" : undefined}
-              accessibilityLabel={
-                isNavigable ? item.title : `${item.title}. Coming soon.`
-              }
+              accessibilityLabel={item.title}
               style={({ pressed }) => [
                 styles.itemRow,
                 pressed && isNavigable && styles.itemRowPressed,
@@ -125,12 +123,6 @@ function ProfileSettingsCard({ theme }: ProfileSettingsCardProps) {
                   {item.subtitle}
                 </Text>
               </View>
-
-              {!isNavigable ? (
-                <View style={[styles.soonBadge, { backgroundColor: theme.primarySoft }]}>
-                  <Text style={[styles.soonText, { color: theme.primary }]}>Soon</Text>
-                </View>
-              ) : null}
 
               <ChevronRight
                 size={17}
@@ -183,8 +175,6 @@ const styles = StyleSheet.create({
   itemText: { flex: 1, marginLeft: 12, paddingRight: 8 },
   itemTitle: { fontSize: 13.5, fontWeight: "600" },
   itemSubtitle: { marginTop: 3, fontSize: 11.5, lineHeight: 16 },
-  soonBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
-  soonText: { fontSize: 9.5, fontWeight: "700", letterSpacing: 0.2 },
 });
 
 export default ProfileSettingsCard;

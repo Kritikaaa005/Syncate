@@ -1,24 +1,31 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+// LOCATION: syncate-mobile/src/screens/common/SplashScreen.tsx
 
-import SyncateLogoMark from "@/components/common/SyncateLogoMark";
-import { guestTheme } from "@/constants/guestTheme";
+import {
+  StyleSheet,
+  View,
+} from "react-native";
 
-const colors = guestTheme.mode.light;
+import SyncateLogo from "@/components/common/SyncateLogo";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function SplashScreen() {
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.markWrapper}>
-        <SyncateLogoMark
-          size={180}
-          primaryColor={colors.primary}
-          accentColor={colors.primarySoft}
-          animated={true}
-        />
-      </View>
+  const { colors } = useTheme();
 
-      <Text style={[styles.wordmark, { color: colors.text }]}>Syncate</Text>
+  return (
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
+      <SyncateLogo
+        variant="full"
+        width={218}
+        height={224}
+      />
     </View>
   );
 }
@@ -28,16 +35,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  markWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  wordmark: {
-    fontSize: 34,
-    fontWeight: "700",
-    fontFamily: "serif",
-    letterSpacing: 0.5,
+    paddingHorizontal: 32,
   },
 });

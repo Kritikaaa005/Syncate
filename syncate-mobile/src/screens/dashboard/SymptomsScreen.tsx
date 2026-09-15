@@ -17,6 +17,7 @@ import {
   FileText,
   Heart,
   HeartPulse,
+  MessageCircle,
   Pill,
   Smile,
   Thermometer,
@@ -62,6 +63,7 @@ import {
   type TrackingCategoryId,
 } from "@/constants/trackingCategories";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useDailyLog } from "@/hooks/useDailyLog";
 
@@ -154,6 +156,69 @@ const CATEGORY_ACCENTS: Record<
     light: "#F5F3FF",
     dark: "#2D2340",
   },
+};
+
+
+
+const SCREEN_COPY = {
+  en: {
+    title: "Log Symptoms",
+    dailyCheckIn: "DAILY CHECK-IN",
+    question: "How are you feeling?",
+    subtitle: "Log anything you'd like to remember about today.",
+    assistantTitle: "Ask Syncate",
+    assistantSubtitle: "Chat about symptoms and reproductive health questions.",
+    previousDay: "Previous day",
+    nextDay: "Next day",
+    openCalendar: "Open calendar",
+    today: "Today",
+    yesterday: "Yesterday",
+    daysAgo: (count: number) => `${count} days ago`,
+    viewingPrevious: "Viewing a previous day",
+    goToday: "Go to today",
+    yourLog: "YOUR LOG",
+    whatTrack: "What would you like to track?",
+    loading: "Loading…",
+    notLogged: "Not logged",
+    chooseDate: "Choose a date",
+    chooseDateSubtitle: "Select a day to view or add entries.",
+    closeCalendar: "Close calendar",
+  },
+  ne: {
+    title: "लक्षणहरू लेख्नुहोस्",
+    dailyCheckIn: "दैनिक जाँच",
+    question: "आज तपाईंलाई कस्तो महसुस भइरहेको छ?",
+    subtitle: "आजको स्वास्थ्यबारे सम्झन चाहेको कुरा यहाँ लेख्नुहोस्।",
+    assistantTitle: "Syncate लाई सोध्नुहोस्",
+    assistantSubtitle: "लक्षण र प्रजनन स्वास्थ्यसम्बन्धी सामान्य प्रश्न सोध्नुहोस्।",
+    previousDay: "अघिल्लो दिन",
+    nextDay: "अर्को दिन",
+    openCalendar: "क्यालेन्डर खोल्नुहोस्",
+    today: "आज",
+    yesterday: "हिजो",
+    daysAgo: (count: number) => `${count} दिन अघि`,
+    viewingPrevious: "अघिल्लो दिन हेरिँदैछ",
+    goToday: "आजमा जानुहोस्",
+    yourLog: "तपाईंको रेकर्ड",
+    whatTrack: "के ट्र्याक गर्न चाहनुहुन्छ?",
+    loading: "लोड हुँदैछ…",
+    notLogged: "रेकर्ड गरिएको छैन",
+    chooseDate: "मिति छान्नुहोस्",
+    chooseDateSubtitle: "रेकर्ड हेर्न वा थप्न दिन छान्नुहोस्।",
+    closeCalendar: "क्यालेन्डर बन्द गर्नुहोस्",
+  },
+} as const;
+
+const CATEGORY_LABEL_NE: Record<TrackingCategoryId, string> = {
+  flow: "रक्तस्राव",
+  symptoms: "लक्षणहरू",
+  mood: "मुड",
+  discharge: "डिस्चार्ज",
+  sexual_health: "यौन स्वास्थ्य",
+  medication: "औषधि",
+  lifestyle: "जीवनशैली",
+  fertility: "प्रजनन क्षमता",
+  notes: "नोटहरू",
 };
 
 function prettifyLabel(value: string): string {
@@ -257,12 +322,14 @@ function getCategorySummary(
 
 function TrackingCard({
   category,
+  displayLabel,
   summary,
   logged,
   index,
   onPress,
 }: {
   category: TrackingCategory;
+  displayLabel: string;
   summary: string;
   logged: boolean;
   index: number;
@@ -322,7 +389,7 @@ function TrackingCard({
           });
         }}
         accessibilityRole="button"
-        accessibilityLabel={`Log ${category.label}`}
+        accessibilityLabel={`Log ${displayLabel}`}
         style={[
           styles.card,
           isWide && styles.cardWide,
@@ -396,7 +463,7 @@ function TrackingCard({
               },
             ]}
           >
-            {category.label}
+            {displayLabel}
           </Text>
 
           <Text
@@ -455,6 +522,9 @@ export default function SymptomsScreen() {
     setIsCalendarOpen,
   ] = useState(false);
 
+  const { language } = useLanguage();
+  const copy = SCREEN_COPY[language];
+
   const {
     data,
     loading,
@@ -508,11 +578,11 @@ export default function SymptomsScreen() {
     );
 
   const relativeDateLabel = isToday
-    ? "Today"
+    ? copy.today
     : differenceInDays === 1
-    ? "Yesterday"
+    ? copy.yesterday
     : differenceInDays > 1
-    ? `${differenceInDays} days ago`
+    ? copy.daysAgo(differenceInDays)
     : "";
 
   const loggedCount =
@@ -580,6 +650,10 @@ export default function SymptomsScreen() {
     } as Href);
   };
 
+  const openAssistant = () => {
+    router.push("/dashboard/chat" as Href);
+  };
+
   return (
     <SafeAreaView
       style={[
@@ -624,7 +698,7 @@ export default function SymptomsScreen() {
               },
             ]}
           >
-            Log Symptoms
+            {copy.title}
           </Text>
 
           <View
@@ -656,7 +730,7 @@ export default function SymptomsScreen() {
                 },
               ]}
             >
-              DAILY CHECK-IN
+              {copy.dailyCheckIn}
             </Text>
 
             <Text
@@ -667,7 +741,7 @@ export default function SymptomsScreen() {
                 },
               ]}
             >
-              How are you feeling?
+              {copy.question}
             </Text>
 
             <Text
@@ -678,10 +752,61 @@ export default function SymptomsScreen() {
                 },
               ]}
             >
-              Log anything you'd like
-              to remember about today.
+              {copy.subtitle}
             </Text>
           </Animated.View>
+
+          <Pressable
+            onPress={openAssistant}
+            accessibilityRole="button"
+            accessibilityLabel={copy.assistantTitle}
+            style={({ pressed }) => [
+              styles.assistantCard,
+              {
+                backgroundColor: theme.primarySoft,
+                borderColor: theme.border,
+              },
+              pressed && styles.standardPressed,
+            ]}
+          >
+            <View
+              style={[
+                styles.assistantIcon,
+                { backgroundColor: theme.card },
+              ]}
+            >
+              <MessageCircle
+                size={20}
+                color={theme.primary}
+                strokeWidth={2.2}
+              />
+            </View>
+
+            <View style={styles.assistantTextArea}>
+              <Text
+                style={[
+                  styles.assistantTitle,
+                  { color: theme.text },
+                ]}
+              >
+                {copy.assistantTitle}
+              </Text>
+              <Text
+                style={[
+                  styles.assistantSubtitle,
+                  { color: theme.muted },
+                ]}
+              >
+                {copy.assistantSubtitle}
+              </Text>
+            </View>
+
+            <ChevronRight
+              size={18}
+              color={theme.primary}
+              strokeWidth={2.4}
+            />
+          </Pressable>
 
           <Animated.View
             entering={FadeInDown
@@ -703,7 +828,7 @@ export default function SymptomsScreen() {
                 moveDate(-1)
               }
               accessibilityRole="button"
-              accessibilityLabel="Previous day"
+              accessibilityLabel={copy.previousDay}
               style={({ pressed }) => [
                 styles.dayArrowButton,
                 {
@@ -726,7 +851,7 @@ export default function SymptomsScreen() {
                 setIsCalendarOpen(true)
               }
               accessibilityRole="button"
-              accessibilityLabel="Open calendar"
+              accessibilityLabel={copy.openCalendar}
               style={({ pressed }) => [
                 styles.dateCenterButton,
                 pressed &&
@@ -785,7 +910,7 @@ export default function SymptomsScreen() {
                 moveDate(1)
               }
               accessibilityRole="button"
-              accessibilityLabel="Next day"
+              accessibilityLabel={copy.nextDay}
               accessibilityState={{
                 disabled: !canGoNext,
               }}
@@ -842,7 +967,7 @@ export default function SymptomsScreen() {
                   },
                 ]}
               >
-                Viewing a previous day
+                {copy.viewingPrevious}
               </Text>
 
               <Pressable
@@ -862,7 +987,7 @@ export default function SymptomsScreen() {
                     },
                   ]}
                 >
-                  Go to today
+                  {copy.goToday}
                 </Text>
               </Pressable>
             </Animated.View>
@@ -880,7 +1005,7 @@ export default function SymptomsScreen() {
                   },
                 ]}
               >
-                YOUR LOG
+                {copy.yourLog}
               </Text>
 
               <Text
@@ -891,8 +1016,7 @@ export default function SymptomsScreen() {
                   },
                 ]}
               >
-                What would you like
-                to track?
+                {copy.whatTrack}
               </Text>
             </View>
 
@@ -938,13 +1062,24 @@ export default function SymptomsScreen() {
                 const logged =
                   hasLoggedValue(value);
 
-                const summary =
+                const baseSummary =
                   loading
-                    ? "Loading…"
+                    ? copy.loading
                     : getCategorySummary(
                         category,
                         value
                       );
+
+                const summary =
+                  language === "ne" &&
+                  baseSummary === "Not logged"
+                    ? copy.notLogged
+                    : baseSummary;
+
+                const displayLabel =
+                  language === "ne"
+                    ? CATEGORY_LABEL_NE[category.id]
+                    : category.label;
 
                 return (
                   <TrackingCard
@@ -952,6 +1087,7 @@ export default function SymptomsScreen() {
                     category={
                       category
                     }
+                    displayLabel={displayLabel}
                     index={index}
                     logged={logged}
                     summary={summary}
@@ -1032,7 +1168,7 @@ export default function SymptomsScreen() {
                     },
                   ]}
                 >
-                  Choose a date
+                  {copy.chooseDate}
                 </Text>
 
                 <Text
@@ -1044,8 +1180,7 @@ export default function SymptomsScreen() {
                     },
                   ]}
                 >
-                  Dots show days with
-                  saved entries.
+                  {copy.chooseDateSubtitle}
                 </Text>
               </View>
 
@@ -1056,7 +1191,7 @@ export default function SymptomsScreen() {
                   )
                 }
                 accessibilityRole="button"
-                accessibilityLabel="Close calendar"
+                accessibilityLabel={copy.closeCalendar}
                 style={({ pressed }) => [
                   styles.closeButton,
                   {
@@ -1171,6 +1306,43 @@ const styles =
       fontSize: 14,
       lineHeight: 21,
       fontWeight: "400",
+    },
+
+    assistantCard: {
+      minHeight: 72,
+      borderRadius: 20,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 14,
+    },
+
+    assistantIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      marginRight: 11,
+    },
+
+    assistantTextArea: {
+      flex: 1,
+      paddingRight: 8,
+    },
+
+    assistantTitle: {
+      fontSize: 14,
+      lineHeight: 19,
+      fontWeight: "800",
+      marginBottom: 2,
+    },
+
+    assistantSubtitle: {
+      fontSize: 11.5,
+      lineHeight: 16,
     },
 
     dateNavigator: {
